@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import Link from "next/link";
 
 export default function LoginCard() {
   return (
@@ -17,8 +18,10 @@ export default function LoginCard() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Button variant="outline" className="w-full">
-          Login with Google
+        <Button variant="outline" className="w-full" asChild>
+          <Link href="#">
+            Login
+          </Link>
         </Button>
       </CardContent>
     </Card>
