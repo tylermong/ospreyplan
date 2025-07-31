@@ -1,5 +1,10 @@
 package app.ospreyplan.backend.auth;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -12,18 +17,23 @@ import java.util.Map;
 @RequestMapping("/auth")
 public class AuthController
 {
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+
     @Value("${supabase.project-url}")
     private String supabaseProjectUrl;
 
     @Value("${supabase.service-role-key}")
     private String supabaseServiceRoleKey;
 
-    @GetMapping("/callback")
-    public ResponseEntity<String> handleOAuthCallback(@RequestParam("code") String code)
-    {
-        String url = supabaseProjectUrl + "/auth/v1/token?grant_type=pkce";
+    @Value("${frontend.base-url}")
+    private String frontendBaseUrl;
 
-        RestTemplate restTemplate = new RestTemplate();
+    @GetMapping("/callback")
+    public ResponseEntity<Void> handleOAuthCallback(@RequestParam("code") String code) throws JsonProcessingException
+    {
+        logger.info("Received OAuth callback with code: {}", code);
+
+        String url = supabaseProjectUrl + "/auth/v1/token?grant_type=pkce";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -35,10 +45,22 @@ public class AuthController
 
         HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
 
-        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+        ResponseEntity<String> response = new RestTemplate().postForEntity(url, request, String.class);
 
-        // TODO: Handle the response (save session, create user, etc.)
+        logger.info("Supabase token endpoint response status: {}", response.getStatusCode());
+        logger.debug("Supabase token endpoint response body: {}", response.getBody());
 
-        return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode json = mapper.readTree(response.getBody());
+        String accessToken = json.get("access_token").asText();
+
+        String frontendUrl = frontendBaseUrl + "/auth/callback?access_token=" + accessToken;
+
+        logger.info("Redirecting user to frontend: {}", frontendUrl);
+
+        HttpHeaders redirectHeaders = new HttpHeaders();
+        redirectHeaders.setLocation(java.net.URI.create(frontendUrl));
+
+        return new ResponseEntity<>(redirectHeaders, HttpStatus.FOUND);
     }
 }
