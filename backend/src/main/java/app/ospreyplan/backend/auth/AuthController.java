@@ -27,7 +27,8 @@ public class AuthController
     private String frontendBaseUrl;
 
     @GetMapping("/callback")
-    public ResponseEntity<Void> handleOAuthCallback(@RequestParam("code") String code) {
+    public ResponseEntity<Void> handleOAuthCallback(@RequestParam("code") String code)
+    {
         logger.info("Received OAuth callback with code: {}", code);
         String frontendUrl = frontendBaseUrl + "/auth/callback?code=" + code;
         HttpHeaders redirectHeaders = new HttpHeaders();
@@ -36,11 +37,14 @@ public class AuthController
     }
 
     @PostMapping("/exchange")
-    public ResponseEntity<?> exchangeCodeForToken(@RequestBody Map<String, String> payload) throws JsonProcessingException {
+    public ResponseEntity<?> exchangeCodeForToken(@RequestBody Map<String, String> payload)
+            throws JsonProcessingException
+    {
         String code = payload.get("code");
         String codeVerifier = payload.get("code_verifier");
 
-        if (code == null || codeVerifier == null) {
+        if (code == null || codeVerifier == null)
+        {
             return ResponseEntity.badRequest().body(Map.of("error", "Missing code or code_verifier"));
         }
 
@@ -60,9 +64,12 @@ public class AuthController
 
         ResponseEntity<String> response = new RestTemplate().postForEntity(url, requestEntity, String.class);
 
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            logger.error("Supabase token endpoint returned error status: {} Body: {}", response.getStatusCode(), response.getBody());
-            return ResponseEntity.status(response.getStatusCode()).body(Map.of("error", "Supabase token exchange failed"));
+        if (!response.getStatusCode().is2xxSuccessful())
+        {
+            logger.error("Supabase token endpoint returned error status: {} Body: {}", response.getStatusCode(),
+                    response.getBody());
+            return ResponseEntity.status(response.getStatusCode())
+                    .body(Map.of("error", "Supabase token exchange failed"));
         }
 
         logger.info("Supabase token endpoint response status: {}", response.getStatusCode());
