@@ -47,16 +47,34 @@ public class AuthController
 
         ResponseEntity<String> response = new RestTemplate().postForEntity(url, request, String.class);
 
+        if (!response.getStatusCode().is2xxSuccessful())
+        {
+            logger.error("Supabase token endpoint returned error status: {} Body: {}", response.getStatusCode(), response.getBody());
+            String frontendUrl = frontendBaseUrl + "/auth/callback?error=supabase_error";
+            HttpHeaders redirectHeaders = new HttpHeaders();
+            redirectHeaders.setLocation(java.net.URI.create(frontendUrl));
+            return new ResponseEntity<>(redirectHeaders, HttpStatus.FOUND);
+        }
+
         logger.info("Supabase token endpoint response status: {}", response.getStatusCode());
         logger.debug("Supabase token endpoint response body: {}", response.getBody());
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode json = mapper.readTree(response.getBody());
-        String accessToken = json.get("access_token").asText();
+        JsonNode accessTokenNode = json.get("access_token");
 
-        String frontendUrl = frontendBaseUrl + "/auth/callback?access_token=" + accessToken;
-
-        logger.info("Redirecting user to frontend: {}", frontendUrl);
+        String frontendUrl;
+        if (accessTokenNode == null || accessTokenNode.isNull())
+        {
+            logger.error("Access token is missing in Supabase response: {}", response.getBody());
+            frontendUrl = frontendBaseUrl + "/auth/callback?error=access_token_missing";
+        }
+        else
+        {
+            String accessToken = accessTokenNode.asText();
+            frontendUrl = frontendBaseUrl + "/auth/callback?access_token=" + accessToken;
+            logger.info("Redirecting to frontend URL {}", frontendUrl);
+        }
 
         HttpHeaders redirectHeaders = new HttpHeaders();
         redirectHeaders.setLocation(java.net.URI.create(frontendUrl));
