@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -51,12 +53,13 @@ public class AuthController
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         headers.set("apikey", supabaseServiceRoleKey);
 
-        // Build form data
-        String form = String.format("grant_type=authorization_code&code=%s&redirect_uri=%s&code_verifier=%s", code,
-                java.net.URLEncoder.encode(frontendBaseUrl + "/auth/callback", java.nio.charset.StandardCharsets.UTF_8),
-                java.net.URLEncoder.encode(codeVerifier, java.nio.charset.StandardCharsets.UTF_8));
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "authorization_code");
+        form.add("code", code);
+        form.add("redirect_uri", frontendBaseUrl + "/auth/callback");
+        form.add("code_verifier", codeVerifier);
 
-        HttpEntity<String> requestEntity = new HttpEntity<>(form, headers);
+        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(form, headers);
 
         try
         {
