@@ -1,6 +1,5 @@
 package app.ospreyplan.backend.auth;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,7 +7,6 @@ import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -38,7 +36,6 @@ public class AuthController
 
     @PostMapping("/exchange")
     public ResponseEntity<?> exchangeCodeForToken(@RequestBody Map<String, String> payload)
-            throws JsonProcessingException
     {
         String code = payload.get("code");
         String codeVerifier = payload.get("code_verifier");
@@ -51,30 +48,32 @@ public class AuthController
         String url = supabaseProjectUrl + "/auth/v1/token";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         headers.set("apikey", supabaseServiceRoleKey);
 
-        Map<String, String> body = new HashMap<>();
-        body.put("grant_type", "authorization_code");
-        body.put("code", code);
-        body.put("redirect_uri", frontendBaseUrl + "/auth/callback");
-        body.put("code_verifier", codeVerifier);
+        // Build form data
+        String form = String.format("grant_type=authorization_code&code=%s&redirect_uri=%s&code_verifier=%s", code,
+                java.net.URLEncoder.encode(frontendBaseUrl + "/auth/callback", java.nio.charset.StandardCharsets.UTF_8),
+                java.net.URLEncoder.encode(codeVerifier, java.nio.charset.StandardCharsets.UTF_8));
 
-        HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(body, headers);
+        HttpEntity<String> requestEntity = new HttpEntity<>(form, headers);
 
-        ResponseEntity<String> response = new RestTemplate().postForEntity(url, requestEntity, String.class);
-
-        if (!response.getStatusCode().is2xxSuccessful())
+        try
         {
-            logger.error("Supabase token endpoint returned error status: {} Body: {}", response.getStatusCode(),
-                    response.getBody());
-            return ResponseEntity.status(response.getStatusCode())
-                    .body(Map.of("error", "Supabase token exchange failed"));
+            ResponseEntity<String> response = new RestTemplate().postForEntity(url, requestEntity, String.class);
+
+            if (!response.getStatusCode().is2xxSuccessful())
+            {
+                return ResponseEntity.status(response.getStatusCode())
+                        .body(Map.of("error", "Supabase token exchange failed", "details", response.getBody()));
+            }
+
+            return ResponseEntity.ok(response.getBody());
         }
-
-        logger.info("Supabase token endpoint response status: {}", response.getStatusCode());
-        logger.debug("Supabase token endpoint response body: {}", response.getBody());
-
-        return ResponseEntity.ok(response.getBody());
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", "Internal server error", "details", e.getMessage()));
+        }
     }
 }
