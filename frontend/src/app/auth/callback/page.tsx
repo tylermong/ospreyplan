@@ -27,7 +27,6 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    // Exchange code + code_verifier for tokens
     fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/exchange`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -36,13 +35,12 @@ export default function AuthCallbackPage() {
     })
       .then(async (res) => {
         if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || "Token exchange failed");
+          throw new Error("Token exchange failed");
         }
         sessionStorage.removeItem("pkce_code_verifier");
         router.replace("/dashboard");
       })
-      .catch((err) => setError(err.message));
+      .catch(() => setError("Sign-in failed. Please try again."));
   }, [searchParams, router]);
 
   if (error) {
