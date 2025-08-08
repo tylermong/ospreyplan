@@ -56,7 +56,6 @@ public class AuthController
             return ResponseEntity.badRequest().body(Map.of(ERROR_KEY, "Missing code or code_verifier"));
         }
 
-        // Avoid logging sensitive payload details
 
         String url = supabaseProjectUrl + "/auth/v1/token?grant_type=pkce";
 
@@ -84,7 +83,6 @@ public class AuthController
         try
         {
             logger.debug("Request URL: {}", url);
-            // Do not log headers or form to avoid leaking secrets
 
             ResponseEntity<String> response = new RestTemplate().postForEntity(url, requestEntity, String.class);
 
@@ -95,7 +93,6 @@ public class AuthController
                         .body(Map.of(ERROR_KEY, "Supabase token exchange failed", DETAILS_KEY, response.getBody()));
             }
 
-            // Parse tokens and set secure HttpOnly cookies for the frontend to use on subsequent backend calls
             JsonNode tokenJson = objectMapper.readTree(Optional.ofNullable(response.getBody()).orElse("{}"));
             String accessToken = tokenJson.path("access_token").asText("");
             String refreshToken = tokenJson.path("refresh_token").asText("");
@@ -119,7 +116,6 @@ public class AuthController
                     .maxAge(expiresInSeconds)
                     .build();
 
-            // Refresh token lifetime is managed by Supabase; keep as a session cookie to avoid guessing max-age
             ResponseCookie refreshCookie = ResponseCookie
                     .from("sb-refresh-token", refreshToken)
                     .httpOnly(true)
