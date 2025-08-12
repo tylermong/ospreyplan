@@ -9,38 +9,50 @@ export default function AuthCallbackPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const code = searchParams.get("code");
-    const errorParam = searchParams.get("error");
+    const handleAuthCallback = async () => {
+      const code = searchParams.get("code");
+      const errorParam = searchParams.get("error");
 
-    if (errorParam) {
-      setError(errorParam);
-      return;
-    }
-    if (!code) {
-      setError("Missing code parameter.");
-      return;
-    }
+      if (errorParam) {
+        setError(errorParam);
+        return;
+      }
+      if (!code) {
+        setError("Missing code parameter.");
+        return;
+      }
 
-    const code_verifier = sessionStorage.getItem("pkce_code_verifier");
-    if (!code_verifier) {
-      setError("Missing PKCE code_verifier.");
-      return;
-    }
+      const code_verifier = sessionStorage.getItem("pkce_code_verifier");
+      if (!code_verifier) {
+        setError("Missing PKCE code_verifier.");
+        return;
+      }
 
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/exchange`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ code, code_verifier }),
-    })
-      .then(async (res) => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/exchange`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ code, code_verifier }),
+        });
+
         if (!res.ok) {
-          throw new Error("Token exchange failed");
+          let msg = "Sign-in failed. Please try again.";
+          try {
+            const data = await res.json();
+            msg = data?.error || msg;
+          } catch {}
+          throw new Error(msg);
         }
+
         sessionStorage.removeItem("pkce_code_verifier");
         router.replace("/dashboard");
-      })
-      .catch(() => setError("Sign-in failed. Please try again."));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Sign-in failed. Please try again.");
+      }
+    };
+
+    void handleAuthCallback();
   }, [searchParams, router]);
 
   if (error) {

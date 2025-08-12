@@ -38,7 +38,9 @@ export default function LoginCard() {
       process.env.NEXT_PUBLIC_SUPABASE_PROJECT_ID
     }.supabase.co/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(
       process.env.NEXT_PUBLIC_BACKEND_URL + "/auth/callback"
-    )}&response_type=code&code_challenge=${code_challenge}&code_challenge_method=S256`;
+    )}&response_type=code&code_challenge=${code_challenge}&code_challenge_method=S256&hd=${
+      process.env.NEXT_PUBLIC_GOOGLE_DOMAIN
+    }`;
 
     window.location.href = supabaseOAuthUrl;
   };
