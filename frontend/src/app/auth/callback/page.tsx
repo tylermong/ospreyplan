@@ -9,7 +9,7 @@ export default function AuthCallbackPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const run = async () => {
+    const handleAuthCallback = async () => {
       const code = searchParams.get("code");
       const errorParam = searchParams.get("error");
 
@@ -51,7 +51,8 @@ export default function AuthCallbackPage() {
         setError(e instanceof Error ? e.message : "Sign-in failed. Please try again.");
       }
     };
-    run();
+
+    void handleAuthCallback();
   }, [searchParams, router]);
 
   if (error) {
