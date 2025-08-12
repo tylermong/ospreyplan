@@ -2,6 +2,7 @@ package app.ospreyplan.backend.auth;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,9 +12,12 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.HttpStatusCodeException;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Set;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Handles authentication callback redirection and PKCE token exchange against Supabase. On successful token exchange,
@@ -57,6 +61,28 @@ public class AuthController
     // Allowed domain for OAuth login
     @Value("${auth.allowed-domains}")
     private String allowedDomains;
+
+    // Pre-processed set of allowed domains for fast lookups
+    private Set<String> allowedDomainSet = Set.of();
+
+    @PostConstruct
+    void initAllowedDomains()
+    {
+        if (allowedDomains == null || allowedDomains.isBlank())
+        {
+            allowedDomainSet = Set.of();
+            logger.warn("No allowed domains configured; all sign-ins will be blocked");
+            return;
+        }
+
+        allowedDomainSet = Arrays.stream(allowedDomains.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(String::toLowerCase)
+                .collect(Collectors.toUnmodifiableSet());
+
+        logger.debug("Configured allowed domains: {}", allowedDomainSet);
+    }
 
     /**
      * Receives the authorization {@code code} from Supabase and redirects the user agent to the frontend callback
@@ -241,14 +267,6 @@ public class AuthController
         }
 
         String domain = email.substring(at + 1).toLowerCase();
-        for (String allowedDomain : allowedDomains.split(","))
-        {
-            if (domain.equals(allowedDomain.trim().toLowerCase()))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return allowedDomainSet.contains(domain);
     }
 }
