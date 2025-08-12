@@ -183,7 +183,7 @@ public class AuthController
                 logger.info("Sign-in blocked: disallowed domain for email={}", email);
 
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of(ERROR_KEY, "Only go.stockton.edu accounts are allowed"));
+                        .body(Map.of(ERROR_KEY, "Only @go.stockton.edu Google accounts are allowed"));
             }
 
             // Use HTTPS to decide whether to mark cookies as Secure
