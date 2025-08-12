@@ -1,6 +1,5 @@
 # 🎓 OspreyPlan
 
-## 📜 Description
 OspreyPlan helps Stockton University students plan degrees, track progress, and build schedules with confidence.
 
 ## ⭐ Features
