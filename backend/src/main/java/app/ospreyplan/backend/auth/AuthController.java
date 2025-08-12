@@ -55,6 +55,10 @@ public class AuthController
     @Value("${backend.base-url}")
     private String backendBaseUrl;
 
+    // Allowed domain for OAuth login
+    @Value("${auth.allowed-domains}")
+    private String allowedDomains;
+
     /**
      * Receives the authorization {@code code} from Supabase and redirects the user
      * agent to the frontend callback route, where the SPA completes the exchange.
@@ -192,5 +196,30 @@ public class AuthController
             logger.error("Error during token exchange: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body(Map.of(ERROR_KEY, "Internal server error", DETAILS_KEY, e.getMessage()));
         }
+    }
+    
+    private boolean isAllowedDomain(String email)
+    {
+        if (email == null)
+        {
+            return false;
+        }
+
+        int at = email.lastIndexOf('@');
+        if (at < 0 || at == email.length() - 1)
+        {
+            return false;
+        }
+
+        String domain = email.substring(at + 1).toLowerCase();
+        for (String allowedDomain : allowedDomains.split(","))
+        {
+            if (domain.equals(allowedDomain.trim().toLowerCase()))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
