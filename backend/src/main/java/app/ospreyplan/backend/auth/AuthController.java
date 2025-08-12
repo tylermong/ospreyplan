@@ -155,6 +155,42 @@ public class AuthController
                         .body(Map.of(ERROR_KEY, "Token parsing failed"));
             }
 
+            // Verify the user is from an allowed domain
+            HttpHeaders userHeaders = new HttpHeaders();
+            userHeaders.setBearerAuth(accessToken);
+            userHeaders.set("apikey", supabaseApiKey);
+            HttpEntity<Void> userRequest = new HttpEntity<>(userHeaders);
+
+            // Fetch the user from Supabase
+            ResponseEntity<String> userResponse = new RestTemplate().exchange(
+                supabaseProjectUrl + "/auth/v1/user",
+                HttpMethod.GET,
+                userRequest,
+                String.class
+            );
+
+            // If the user fetch fails, block the sign-in
+            if (!userResponse.getStatusCode().is2xxSuccessful())
+            {
+                logger.info("Sign-in blocked: failed to fetch Supabase user, status={}", userResponse.getStatusCode());
+
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of(ERROR_KEY, "Unable to verify account domain"));
+            }
+
+            // Parse the user from the response
+            JsonNode userJson = objectMapper.readTree(Optional.ofNullable(userResponse.getBody()).orElse("{}"));
+            String email = userJson.path("email").asText("");
+
+            // If the user is not from an allowed domain, block the sign-in
+            if (!isAllowedDomain(email))
+            {
+                logger.info("Sign-in blocked: disallowed domain for email={}", email);
+
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of(ERROR_KEY, "Only go.stockton.edu accounts are allowed"));
+            }
+
             // Use HTTPS to decide whether to mark cookies as Secure
             boolean secureCookie = backendBaseUrl != null && backendBaseUrl.startsWith("https://");
 
@@ -198,6 +234,12 @@ public class AuthController
         }
     }
     
+    /**
+     * Checks if the email is from an allowed domain
+     *
+     * @param email the email to check
+     * @return true if the email is from an allowed domain, false otherwise
+     */
     private boolean isAllowedDomain(String email)
     {
         if (email == null)
