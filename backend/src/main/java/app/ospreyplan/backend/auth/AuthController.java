@@ -16,9 +16,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Handles authentication callback redirection and PKCE token exchange
- * against Supabase. On successful token exchange, httpOnly cookies are
- * issued for the access and refresh tokens.
+ * Handles authentication callback redirection and PKCE token exchange against Supabase. On successful token exchange,
+ * httpOnly cookies are issued for the access and refresh tokens.
  *
  * Endpoints:
  * - GET `/auth/callback` – forwards the authorization code to the frontend
@@ -60,11 +59,11 @@ public class AuthController
     private String allowedDomains;
 
     /**
-     * Receives the authorization {@code code} from Supabase and redirects the user
-     * agent to the frontend callback route, where the SPA completes the exchange.
+     * Receives the authorization {@code code} from Supabase and redirects the user agent to the frontend callback
+     * route, where the SPA completes the exchange.
      *
-     * @param code the authorization code returned by Supabase
-     * @return 302 Found with a Location header pointing to the frontend callback URL
+     * @param  code the authorization code returned by Supabase
+     * @return      302 Found with a Location header pointing to the frontend callback URL
      */
     @GetMapping("/callback")
     public ResponseEntity<Void> handleOAuthCallback(@RequestParam("code") String code)
@@ -79,15 +78,15 @@ public class AuthController
     }
 
     /**
-     * Exchanges a PKCE authorization code for tokens via Supabase and sets
-     * httpOnly cookies for the access and refresh tokens on success.
+     * Exchanges a PKCE authorization code for tokens via Supabase and sets httpOnly cookies for the access and refresh
+     * tokens on success.
      *
      * Expected request body fields:
      * - {@code code}: the authorization code received from the OAuth redirect
      * - {@code code_verifier}: the original code verifier used during the PKCE flow
      *
-     * @param payload JSON body containing {@code code} and {@code code_verifier}
-     * @return 200 OK with Set-Cookie headers when successful; otherwise an error response
+     * @param  payload JSON body containing {@code code} and {@code code_verifier}
+     * @return         200 OK with Set-Cookie headers when successful; otherwise an error response
      */
     @PostMapping("/exchange")
     public ResponseEntity<Map<String, Object>> exchangeCodeForToken(@RequestBody Map<String, String> payload)
@@ -112,14 +111,14 @@ public class AuthController
 
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonBody;
-        try {
+        try
+        {
             // Serialize the token exchange payload
-            jsonBody = objectMapper.writeValueAsString(Map.of(
-                "auth_code", code,
-                "redirect_uri", backendBaseUrl + "/auth/callback",
-                "code_verifier", codeVerifier
-            ));
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            jsonBody = objectMapper.writeValueAsString(Map.of("auth_code", code, "redirect_uri",
+                    backendBaseUrl + "/auth/callback", "code_verifier", codeVerifier));
+        }
+        catch (com.fasterxml.jackson.core.JsonProcessingException e)
+        {
             logger.error("Failed to serialize token exchange payload: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of(ERROR_KEY, "Internal server error", DETAILS_KEY, "Serialization failed"));
@@ -162,12 +161,8 @@ public class AuthController
             HttpEntity<Void> userRequest = new HttpEntity<>(userHeaders);
 
             // Fetch the user from Supabase
-            ResponseEntity<String> userResponse = new RestTemplate().exchange(
-                supabaseProjectUrl + "/auth/v1/user",
-                HttpMethod.GET,
-                userRequest,
-                String.class
-            );
+            ResponseEntity<String> userResponse = new RestTemplate().exchange(supabaseProjectUrl + "/auth/v1/user",
+                    HttpMethod.GET, userRequest, String.class);
 
             // If the user fetch fails, block the sign-in
             if (!userResponse.getStatusCode().is2xxSuccessful())
@@ -195,23 +190,12 @@ public class AuthController
             boolean secureCookie = backendBaseUrl != null && backendBaseUrl.startsWith("https://");
 
             // Access token cookie is httpOnly and has a max-age matching expiry
-            ResponseCookie accessCookie = ResponseCookie
-                    .from("sb-access-token", accessToken)
-                    .httpOnly(true)
-                    .secure(secureCookie)
-                    .sameSite("Lax")
-                    .path("/")
-                    .maxAge(expiresInSeconds)
-                    .build();
+            ResponseCookie accessCookie = ResponseCookie.from("sb-access-token", accessToken).httpOnly(true)
+                    .secure(secureCookie).sameSite("Lax").path("/").maxAge(expiresInSeconds).build();
 
             // Refresh token cookie is httpOnly; omit maxAge to allow session-based handling by defaults
-            ResponseCookie refreshCookie = ResponseCookie
-                    .from("sb-refresh-token", refreshToken)
-                    .httpOnly(true)
-                    .secure(secureCookie)
-                    .sameSite("Lax")
-                    .path("/")
-                    .build();
+            ResponseCookie refreshCookie = ResponseCookie.from("sb-refresh-token", refreshToken).httpOnly(true)
+                    .secure(secureCookie).sameSite("Lax").path("/").build();
 
             HttpHeaders setCookieHeaders = new HttpHeaders();
             setCookieHeaders.add(HttpHeaders.SET_COOKIE, accessCookie.toString());
@@ -223,22 +207,25 @@ public class AuthController
         catch (HttpStatusCodeException ex)
         {
             // Return the HTTP status code and error message received from Supabase when available
-            logger.error("Supabase token exchange failed: status={}, body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
-            return ResponseEntity.status(ex.getStatusCode()).body(Map.of(ERROR_KEY, "Supabase token exchange failed", DETAILS_KEY, ex.getResponseBodyAsString()));
+            logger.error("Supabase token exchange failed: status={}, body={}", ex.getStatusCode(),
+                    ex.getResponseBodyAsString());
+            return ResponseEntity.status(ex.getStatusCode()).body(
+                    Map.of(ERROR_KEY, "Supabase token exchange failed", DETAILS_KEY, ex.getResponseBodyAsString()));
         }
         catch (Exception e)
         {
             // Generic safety net for unexpected failures
             logger.error("Error during token exchange: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).body(Map.of(ERROR_KEY, "Internal server error", DETAILS_KEY, e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(Map.of(ERROR_KEY, "Internal server error", DETAILS_KEY, e.getMessage()));
         }
     }
-    
+
     /**
      * Checks if the email is from an allowed domain
      *
-     * @param email the email to check
-     * @return true if the email is from an allowed domain, false otherwise
+     * @param  email the email to check
+     * @return       true if the email is from an allowed domain, false otherwise
      */
     private boolean isAllowedDomain(String email)
     {
