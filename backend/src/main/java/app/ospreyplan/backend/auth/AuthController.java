@@ -11,6 +11,8 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.HttpStatusCodeException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,6 +42,10 @@ public class AuthController
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
     private static final String ERROR_KEY = "error";
     private static final String DETAILS_KEY = "details";
+    private static final String APIKEY_HEADER = "apikey";
+    private static final String ACCESS_COOKIE_NAME = "sb-access-token";
+    private static final String REFRESH_COOKIE_NAME = "sb-refresh-token";
+    private static final String UNAUTHORIZED_MESSAGE = "Unauthorized";
 
     // Supabase project base URL (https://<project-id>.supabase.co)
     @Value("${supabase.project-url}")
@@ -132,7 +138,7 @@ public class AuthController
         // Prepare headers for Supabase request
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("apikey", supabaseApiKey);
+        headers.set(APIKEY_HEADER, supabaseApiKey);
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -183,7 +189,7 @@ public class AuthController
             // Verify the user is from an allowed domain
             HttpHeaders userHeaders = new HttpHeaders();
             userHeaders.setBearerAuth(accessToken);
-            userHeaders.set("apikey", supabaseApiKey);
+            userHeaders.set(APIKEY_HEADER, supabaseApiKey);
             HttpEntity<Void> userRequest = new HttpEntity<>(userHeaders);
 
             // Fetch the user from Supabase
@@ -216,11 +222,11 @@ public class AuthController
             boolean secureCookie = backendBaseUrl != null && backendBaseUrl.startsWith("https://");
 
             // Access token cookie is httpOnly and has a max-age matching expiry
-            ResponseCookie accessCookie = ResponseCookie.from("sb-access-token", accessToken).httpOnly(true)
+            ResponseCookie accessCookie = ResponseCookie.from(ACCESS_COOKIE_NAME, accessToken).httpOnly(true)
                     .secure(secureCookie).sameSite("Lax").path("/").maxAge(expiresInSeconds).build();
 
             // Refresh token cookie is httpOnly; omit maxAge to allow session-based handling by defaults
-            ResponseCookie refreshCookie = ResponseCookie.from("sb-refresh-token", refreshToken).httpOnly(true)
+            ResponseCookie refreshCookie = ResponseCookie.from(REFRESH_COOKIE_NAME, refreshToken).httpOnly(true)
                     .secure(secureCookie).sameSite("Lax").path("/").build();
 
             HttpHeaders setCookieHeaders = new HttpHeaders();
@@ -244,6 +250,93 @@ public class AuthController
             logger.error("Error during token exchange: {}", e.getMessage(), e);
             return ResponseEntity.status(500)
                     .body(Map.of(ERROR_KEY, "Internal server error", DETAILS_KEY, e.getMessage()));
+        }
+    }
+
+    /**
+     * Logs out the current user by clearing auth cookies.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, Object>> logout(HttpServletResponse response)
+    {
+        boolean secureCookie = backendBaseUrl != null && backendBaseUrl.startsWith("https://");
+
+        ResponseCookie clearAccess = ResponseCookie.from(ACCESS_COOKIE_NAME, "")
+                .httpOnly(true)
+                .secure(secureCookie)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0)
+                .build();
+
+        ResponseCookie clearRefresh = ResponseCookie.from(REFRESH_COOKIE_NAME, "")
+                .httpOnly(true)
+                .secure(secureCookie)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0)
+                .build();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.SET_COOKIE, clearAccess.toString());
+        headers.add(HttpHeaders.SET_COOKIE, clearRefresh.toString());
+
+        return new ResponseEntity<>(Map.of("status", "logged_out"), headers, HttpStatus.OK);
+    }
+
+    /**
+     * Returns the current Supabase user payload if the access token is valid.
+     */
+    @GetMapping("/me")
+    public ResponseEntity<JsonNode> me(HttpServletRequest request)
+    {
+        // Read access token from cookie
+        String accessToken = null;
+        if (request.getCookies() != null)
+        {
+            for (jakarta.servlet.http.Cookie c : request.getCookies())
+            {
+                if (ACCESS_COOKIE_NAME.equals(c.getName()))
+                {
+                    accessToken = c.getValue();
+                    break;
+                }
+            }
+        }
+
+        if (accessToken == null || accessToken.isEmpty())
+        {
+            ObjectMapper mapper = new ObjectMapper();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(mapper.createObjectNode().put(ERROR_KEY, UNAUTHORIZED_MESSAGE));
+        }
+
+        try
+        {
+            HttpHeaders userHeaders = new HttpHeaders();
+            userHeaders.setBearerAuth(accessToken);
+            userHeaders.set(APIKEY_HEADER, supabaseApiKey);
+            HttpEntity<Void> userRequest = new HttpEntity<>(userHeaders);
+
+            ResponseEntity<String> userResponse = new RestTemplate().exchange(
+                    supabaseProjectUrl + "/auth/v1/user", HttpMethod.GET, userRequest, String.class);
+
+            if (!userResponse.getStatusCode().is2xxSuccessful())
+            {
+                ObjectMapper mapper = new ObjectMapper();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(mapper.createObjectNode().put(ERROR_KEY, UNAUTHORIZED_MESSAGE));
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode userJson = mapper.readTree(Optional.ofNullable(userResponse.getBody()).orElse("{}"));
+            return ResponseEntity.ok(userJson);
+        }
+        catch (Exception e)
+        {
+            ObjectMapper mapper = new ObjectMapper();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(mapper.createObjectNode().put(ERROR_KEY, UNAUTHORIZED_MESSAGE));
         }
     }
 
