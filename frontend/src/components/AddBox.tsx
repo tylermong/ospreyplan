@@ -12,9 +12,15 @@ export default function AddBox({ label, onClick, className }: Readonly<AddBoxPro
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground hover:border-foreground/60 transition-colors",
+        // Layout
+        "w-full",
+        "flex flex-col items-center justify-center",
+        // Appearance
+        "border-2 border-dashed rounded-xl",
+        "text-muted-foreground",
+        // Interactive states
+        "hover:border-foreground/60 transition-colors",
         "focus-visible:ring-[3px] focus-visible:ring-ring/50 outline-none",
-        "h-36",
         className
       )}
     >
