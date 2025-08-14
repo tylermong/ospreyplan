@@ -43,7 +43,7 @@ export default function Planner() {
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
       {semesters.map((semester) => (
-        <Card key={semester.id} className="p-0">
+        <Card key={semester.id}>
           <CardHeader>
             <CardTitle>{semester.title}</CardTitle>
           </CardHeader>
