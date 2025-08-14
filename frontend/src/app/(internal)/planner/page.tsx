@@ -1,10 +1,11 @@
 import React from "react";
+import Planner from "@/components/Planner";
 
 export default function PlannerPage() {
     return (
-        <main style={{ padding: "2rem" }}>
-            <h1>Planner</h1>
-            <p>This is a temporary planner page.</p>
+        <main className="p-8 space-y-6">
+            <h1 className="text-2xl font-semibold">Planner</h1>
+            <Planner />
         </main>
     );
 }
