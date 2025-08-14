@@ -12,10 +12,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
-export function NavProjects({
-  projects,
+export function NavItems({
+  items,
 }: {
-  projects: {
+  items: {
     name: string
     url: string
     icon: LucideIcon
@@ -26,7 +26,7 @@ export function NavProjects({
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarMenu>
-        {projects.map((item) => (
+        {items.map((item) => (
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton asChild>
               <a href={item.url}>
