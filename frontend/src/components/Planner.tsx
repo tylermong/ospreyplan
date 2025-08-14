@@ -40,16 +40,8 @@ export default function Planner() {
     );
   }
 
-  if (semesters.length === 0) {
-    return (
-      <div className="max-w-3xl">
-        <AddBox label="Add semester" onClick={addSemester} className="h-48" />
-      </div>
-    );
-  }
-
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
       {semesters.map((semester) => (
         <Card key={semester.id} className="p-0">
           <CardHeader>
@@ -79,7 +71,7 @@ export default function Planner() {
       <AddBox
         label="Add semester"
         onClick={addSemester}
-        className="h-48"
+        className="h-48 col-span-1"
       />
     </div>
   );
