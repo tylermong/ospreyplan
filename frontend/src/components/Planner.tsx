@@ -4,7 +4,13 @@ import { useState } from "react";
 import AddBox from "./AddBox";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { Pencil } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "./ui/dropdown-menu";
+import { Pencil, ChevronDown } from "lucide-react";
 
 type Course = { id: number; name: string };
 type Semester = { id: number; title: string; term: string; year: number; courses: Course[] };
@@ -131,37 +137,37 @@ export default function Planner() {
               <CardTitle>
                 {isEditing ? (
                   <div className="flex w-full items-center gap-2">
-                    <select
-                      value={draftTerm}
-                      onChange={(e) => setDraftTerm(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") commitRenameSemester();
-                        if (e.key === "Escape") cancelRenameSemester();
-                      }}
-                      autoFocus
-                      className="rounded-md border px-2 py-1 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                    >
-                      {TERMS.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={draftYear}
-                      onChange={(e) => setDraftYear(Number(e.target.value))}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") commitRenameSemester();
-                        if (e.key === "Escape") cancelRenameSemester();
-                      }}
-                      className="rounded-md border px-2 py-1 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                    >
-                      {years.map((y) => (
-                        <option key={y} value={y}>
-                          {y}
-                        </option>
-                      ))}
-                    </select>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="rounded-md px-2 py-1 text-sm flex items-center gap-2">
+                          <span>{draftTerm}</span>
+                          <ChevronDown className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent side="bottom" className="w-40">
+                        {TERMS.map((t) => (
+                          <DropdownMenuItem key={t} onSelect={() => setDraftTerm(t)}>
+                            {t}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="rounded-md px-2 py-1 text-sm flex items-center gap-2">
+                          <span>{draftYear}</span>
+                          <ChevronDown className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent side="bottom" className="w-36 max-h-56 overflow-auto">
+                        {years.map((y) => (
+                          <DropdownMenuItem key={y} onSelect={() => setDraftYear(y)}>
+                            {y}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 ) : (
                   semester.title
