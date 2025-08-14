@@ -18,7 +18,10 @@ export default function Planner() {
   const TERMS = ["Summer", "Fall", "Winter", "Spring"];
   const YEAR_START = 2018;
   const YEAR_END = 2032;
-  const years = Array.from({ length: YEAR_END - YEAR_START + 1 }, (_, i) => YEAR_START + i).reverse();
+  const years = Array.from(
+    { length: YEAR_END - YEAR_START + 1 },
+    (_, i) => YEAR_START + i
+  ).reverse();
 
   function addSemester() {
     setSemesters((prev) => {
