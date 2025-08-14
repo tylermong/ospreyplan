@@ -1,51 +1,33 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import {
-  AudioWaveform,
   CalendarDays,
-  Command,
-  GalleryVerticalEnd,
   Monitor,
   Settings,
 } from "lucide-react"
-
-import { NavProjects } from "@/components/nav-projects"
+import { NavItems } from "@/components/nav-items"
 import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
 
-// This is sample data.
 const data = {
+  // TODO: Get user data from backend
   user: {
     name: "shadcn",
     email: "m@example.com",
     avatar: "/avatars/shadcn.jpg",
   },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
-  projects: [
+  items: [
     {
       name: "Dashboard",
       url: "/dashboard",
@@ -68,10 +50,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            >
+              <Link href="/dashboard" className="flex items-center gap-2">
+                <img
+                  src="/ospreyplan-black-transparent.png"
+                  alt="OspreyPlan"
+                  width={32}
+                  height={32}
+                />
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-bold text-xl">
+                    OspreyPlan
+                  </span>
+                </div>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavProjects projects={data.projects} />
+        <NavItems items={data.items} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
