@@ -128,7 +128,7 @@ export default function Planner() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
       {semesters.map((semester) => {
         const isEditing = editingSemesterId === semester.id;
         return (
