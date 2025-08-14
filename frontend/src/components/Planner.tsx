@@ -7,22 +7,66 @@ import { Button } from "./ui/button";
 import { Pencil } from "lucide-react";
 
 type Course = { id: number; name: string };
-type Semester = { id: number; title: string; courses: Course[] };
+type Semester = { id: number; title: string; term: string; year: number; courses: Course[] };
 
 export default function Planner() {
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [editingSemesterId, setEditingSemesterId] = useState<number | null>(null);
-  const [draftTitle, setDraftTitle] = useState<string>("");
+  const [draftTerm, setDraftTerm] = useState<string>("Fall");
+  const [draftYear, setDraftYear] = useState<number>(new Date().getFullYear());
+
+  const TERMS = ["Summer", "Fall", "Winter", "Spring"];
+  const YEAR_START = 2018;
+  const YEAR_END = 2032;
+  const years = Array.from({ length: YEAR_END - YEAR_START + 1 }, (_, i) => YEAR_START + i).reverse();
 
   function addSemester() {
-    setSemesters((prev) => [
-      ...prev,
-      {
-        id: prev.length + 1,
-        title: "Untitled Semester",
-        courses: [],
-      },
-    ]);
+    setSemesters((prev) => {
+      const currentYear = new Date().getFullYear();
+      const last = prev[prev.length - 1];
+
+      // Default values
+      let term = "Fall";
+      let year = currentYear; // TODO: Set this to user's start year (implement new user procedure)
+
+      // Compute next term/year based on last semester
+      if (last) {
+        const lastTerm = last.term;
+        const lastYear = last.year ?? currentYear;
+
+        if (lastTerm === "Summer") {
+          term = "Fall";
+          year = lastYear;
+        }
+        else if (lastTerm === "Fall") {
+          term = "Spring";
+          year = lastYear + 1;
+        }
+        else if (lastTerm === "Winter") {
+          term = "Spring";
+          year = lastYear;
+        }
+        else if (lastTerm === "Spring") {
+          term = "Fall";
+          year = lastYear;
+        }
+        else {
+          term = "Fall";
+          year = lastYear;
+        }
+      }
+
+      return [
+        ...prev,
+        {
+          id: prev.length + 1,
+          term,
+          year,
+          title: `${term} ${year}`,
+          courses: [],
+        },
+      ];
+    });
   }
 
   function addCourse(semesterId: number) {
@@ -46,25 +90,32 @@ export default function Planner() {
 
   function startRenamingSemester(semester: Semester) {
     setEditingSemesterId(semester.id);
-    setDraftTitle(semester.title);
+    setDraftTerm(semester.term ?? "Fall");
+    setDraftYear(semester.year ?? new Date().getFullYear());
   }
 
   function commitRenameSemester() {
     if (editingSemesterId === null) return;
 
-    const nextTitle = draftTitle.trim() || "Untitled Semester";
+    const nextTerm = draftTerm || "Fall";
+    const nextYear = draftYear || new Date().getFullYear();
+    const nextTitle = `${nextTerm} ${nextYear}`;
     setSemesters((prev) =>
       prev.map((semester) =>
-        semester.id === editingSemesterId ? { ...semester, title: nextTitle } : semester
+        semester.id === editingSemesterId
+          ? { ...semester, term: nextTerm, year: nextYear, title: nextTitle }
+          : semester
       )
     );
     setEditingSemesterId(null);
-    setDraftTitle("");
+    setDraftTerm("Fall");
+    setDraftYear(new Date().getFullYear());
   }
 
   function cancelRenameSemester() {
     setEditingSemesterId(null);
-    setDraftTitle("");
+    setDraftTerm("Fall");
+    setDraftYear(new Date().getFullYear());
   }
 
   return (
@@ -76,19 +127,39 @@ export default function Planner() {
             <CardHeader className="items-center">
               <CardTitle>
                 {isEditing ? (
-                  <input
-                    type="text"
-                    value={draftTitle}
-                    onChange={(e) => setDraftTitle(e.target.value)}
-                    onBlur={commitRenameSemester}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") commitRenameSemester();
-                      if (e.key === "Escape") cancelRenameSemester();
-                    }}
-                    autoFocus
-                    onFocus={(e) => e.currentTarget.select()}
-                    className="w-full rounded-md border px-2 py-1 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                  />
+                  <div className="flex w-full items-center gap-2">
+                    <select
+                      value={draftTerm}
+                      onChange={(e) => setDraftTerm(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitRenameSemester();
+                        if (e.key === "Escape") cancelRenameSemester();
+                      }}
+                      autoFocus
+                      className="rounded-md border px-2 py-1 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    >
+                      {TERMS.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={draftYear}
+                      onChange={(e) => setDraftYear(Number(e.target.value))}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitRenameSemester();
+                        if (e.key === "Escape") cancelRenameSemester();
+                      }}
+                      className="rounded-md border px-2 py-1 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    >
+                      {years.map((y) => (
+                        <option key={y} value={y}>
+                          {y}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 ) : (
                   semester.title
                 )}
