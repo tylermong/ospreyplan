@@ -217,7 +217,7 @@ export default function Planner() {
       <AddBox
         label="Add semester"
         onClick={addSemester}
-        className="h-48 col-span-1"
+        className="h-60 col-span-1"
       />
     </div>
   );
