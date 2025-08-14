@@ -25,17 +25,17 @@ export default function Settings() {
   );
 
   return (
-    <div className="w-1/5">
+    <div className="w-1/4">
       <Card>
         <CardContent>
-          <form className="grid gap-6">
+          <form className="grid gap-6 grid-cols-1">
             <div className="flex flex-col gap-2">
-              <label className="text-md">Degree</label>
+              <label className="text-md font-bold">Degree</label>
               <span className="text-xs text-muted-foreground">
                 Choose the degree program you are enrolled in.
               </span>
               <Select>
-                <SelectTrigger className="w-full max-w-sm border-foreground/10 mt-2">
+                <SelectTrigger className="w-full max-w-sm border-foreground/10">
                   <SelectValue placeholder="Select your degree" />
                 </SelectTrigger>
                 <SelectContent>
@@ -53,12 +53,12 @@ export default function Settings() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-md font-medium">Start Year</label>
+              <label className="text-md font-bold">Start Year</label>
               <span className="text-xs text-muted-foreground">
-                The year you began your program.
+                Choose the year you began your program.
               </span>
               <Select>
-                <SelectTrigger className="w-full max-w-sm border-foreground/10 mt-2">
+                <SelectTrigger className="w-full max-w-sm border-foreground/10">
                   <SelectValue placeholder="Select your start year" />
                 </SelectTrigger>
                 <SelectContent>
