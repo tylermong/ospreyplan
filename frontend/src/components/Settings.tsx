@@ -23,8 +23,8 @@ export default function Settings() {
     setError(null);
 
     try {
-      const response = await fetch("/settings", {
-        method: "POST",
+      const response = await fetch("/api/settings", {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ degree, startYear }),
