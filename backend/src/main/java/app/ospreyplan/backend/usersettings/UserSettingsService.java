@@ -2,6 +2,8 @@ package app.ospreyplan.backend.usersettings;
 
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 public class UserSettingsService
 {
