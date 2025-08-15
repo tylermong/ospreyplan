@@ -39,13 +39,18 @@ public class UserSettingsService
 
     private UUID getCurrentUserId(HttpServletRequest request)
     {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer "))
+        String token = null;
+        if (request.getCookies() != null)
         {
-            throw new RuntimeException("No token provided");
+            for (jakarta.servlet.http.Cookie c : request.getCookies())
+            {
+                if ("sb-access-token".equals(c.getName()))
+                {
+                    token = c.getValue();
+                    break;
+                }
+            }
         }
-
-        String token = authHeader.substring(7); // remove "Bearer " prefix
 
         Claims claims;
         try
