@@ -20,12 +20,10 @@ public class UserSettingsController
         this.service = service;
     }
 
-    @PutMapping("/{userId}")
-    public ResponseEntity<UserSettings> updateUserSettings(
-            @PathVariable UUID userId,
-            @RequestBody UserSettingsDTO dto)
+    @PutMapping
+    public ResponseEntity<UserSettings> updateUserSettings(@RequestBody UserSettingsDTO dto)
     {
-        UserSettings settings = service.updateSettings(userId, dto);
+        UserSettings settings = service.updateSettings(dto);
 
         return ResponseEntity.ok(settings);
     }

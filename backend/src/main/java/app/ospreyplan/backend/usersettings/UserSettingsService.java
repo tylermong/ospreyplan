@@ -14,8 +14,10 @@ public class UserSettingsService
         this.repository = repository;
     }
 
-    public UserSettings updateSettings(UUID userId, UserSettingsDTO dto)
+    public UserSettings updateSettings(UserSettingsDTO dto)
     {
+        UUID userId = getCurrentUserId();
+
         UserSettings settings = repository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User ID not found"));
 
@@ -23,5 +25,11 @@ public class UserSettingsService
         settings.setStartYear(dto.getStartYear());
 
         return repository.save(settings);
+    }
+
+    private UUID getCurrentUserId()
+    {
+        // Implement your logic to retrieve the current user's ID
+        return UUID.randomUUID(); // Placeholder implementation
     }
 }
