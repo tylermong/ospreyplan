@@ -1,20 +1,9 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent, CardFooter, } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue, } from "@/components/ui/select";
 
 export default function Settings() {
   const START_YEAR = 2020;
@@ -23,6 +12,39 @@ export default function Settings() {
     { length: currentYear - START_YEAR + 1 },
     (_, i) => START_YEAR + i
   );
+
+  const [degree, setDegree] = useState<string | null>(null);
+  const [startYear, setStartYear] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSave() {
+    setSaving(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ degree, startYear }),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        setError(body.error || "Failed to save settings");
+      }
+      else {
+        // TODO: Success toast
+      }
+    }
+    catch (error) {
+      setError("Error saving settings");
+    }
+    finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="w-1/4">
@@ -34,18 +56,18 @@ export default function Settings() {
               <span className="text-xs text-muted-foreground">
                 Choose the degree program you are enrolled in.
               </span>
-              <Select>
+              <Select onValueChange={(selectedDegree) => setDegree(selectedDegree)}>
                 <SelectTrigger className="w-full max-w-sm border-foreground/10">
                   <SelectValue placeholder="Select your degree" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Degrees</SelectLabel>
-                    <SelectItem value="computer-science">
-                      Computer Science
+                    <SelectItem value="bs-computer-science">
+                      B.S. in Computer Science
                     </SelectItem>
-                    <SelectItem value="computer-information-systems">
-                      Computer Information Systems
+                    <SelectItem value="bs-computer-information-systems">
+                      B.S. in Computer Information Systems
                     </SelectItem>
                   </SelectGroup>
                 </SelectContent>
@@ -57,7 +79,7 @@ export default function Settings() {
               <span className="text-xs text-muted-foreground">
                 Choose the year you began your program.
               </span>
-              <Select>
+              <Select onValueChange={(selectedYear) => setStartYear(selectedYear)}>
                 <SelectTrigger className="w-full max-w-sm border-foreground/10">
                   <SelectValue placeholder="Select your start year" />
                 </SelectTrigger>
@@ -74,6 +96,7 @@ export default function Settings() {
               </Select>
             </div>
           </form>
+          {error && <div className="text-red-500 mt-2">{error}</div>}
         </CardContent>
 
         <CardFooter>
@@ -81,7 +104,9 @@ export default function Settings() {
             <Button variant="ghost" size="sm">
               Cancel
             </Button>
-            <Button size="sm">Save changes</Button>
+            <Button size="sm" onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : "Save changes"}
+            </Button>
           </div>
         </CardFooter>
       </Card>
