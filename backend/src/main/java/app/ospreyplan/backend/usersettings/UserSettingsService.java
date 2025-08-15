@@ -24,7 +24,7 @@ public class UserSettingsService
         this.repository = repository;
     }
 
-    public UserSettings updateSettings(UserSettingsDTO dto, HttpServletRequest request)
+    public UserSettingsDTO updateSettings(UserSettingsDTO dto, HttpServletRequest request)
     {
         UUID userId = getCurrentUserId(request);
 
@@ -34,7 +34,27 @@ public class UserSettingsService
         settings.setDegree(dto.getDegree());
         settings.setStartYear(dto.getStartYear());
 
-        return repository.save(settings);
+        UserSettings saved = repository.save(settings);
+
+        UserSettingsDTO out = new UserSettingsDTO();
+        out.setDegree(saved.getDegree());
+        out.setStartYear(saved.getStartYear());
+
+        return out;
+    }
+
+    public UserSettingsDTO getUserSettings(HttpServletRequest request)
+    {
+        UUID userId = getCurrentUserId(request);
+
+        UserSettings settings = repository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User ID not found"));
+
+        UserSettingsDTO dto = new UserSettingsDTO();
+        dto.setDegree(settings.getDegree());
+        dto.setStartYear(settings.getStartYear());
+
+        return dto;
     }
 
     private UUID getCurrentUserId(HttpServletRequest request)
