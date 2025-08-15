@@ -22,8 +22,13 @@ export default function Settings() {
     setSaving(true);
     setError(null);
 
+    const apiBaseUrl =
+      process.env.NODE_ENV === "production"
+        ? "https://ospreyplan.app"
+        : "http://localhost:8080";
+
     try {
-      const response = await fetch("/api/settings", {
+      const response = await fetch(`${apiBaseUrl}/api/settings`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
