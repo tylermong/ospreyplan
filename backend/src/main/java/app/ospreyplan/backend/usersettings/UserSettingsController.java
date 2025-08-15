@@ -9,11 +9,11 @@ import java.util.UUID;
 @RequestMapping("/api/settings")
 public class UserSettingsController
 {
-    private final UserSettingsRepository repository;
+    private final UserSettingsService service;
 
-    public UserSettingsController(UserSettingsRepository repository)
+    public UserSettingsController(UserSettingsService service)
     {
-        this.repository = repository;
+        this.service = service;
     }
 
     @PutMapping("/{userId}")
@@ -21,13 +21,7 @@ public class UserSettingsController
             @PathVariable UUID userId,
             @RequestBody UserSettingsDTO dto)
     {
-        UserSettings settings = repository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User ID not found"));
-
-        settings.setDegree(dto.getDegree());
-        settings.setStartYear(dto.getStartYear());
-
-        repository.save(settings);
+        UserSettings settings = service.updateSettings(userId, dto);
 
         return ResponseEntity.ok(settings);
     }
