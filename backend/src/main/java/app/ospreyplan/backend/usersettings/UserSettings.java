@@ -29,7 +29,7 @@ public class UserSettings
     private String degree;
     
     @Column(name = "start_year")
-    private short startYear;
+    private Integer startYear;
     
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
@@ -87,12 +87,12 @@ public class UserSettings
         this.degree = degree;
     }
 
-    public short getStartYear()
+    public Integer getStartYear()
     {
         return startYear;
     }
 
-    public void setStartYear(short startYear)
+    public void setStartYear(Integer startYear)
     {
         this.startYear = startYear;
     }
