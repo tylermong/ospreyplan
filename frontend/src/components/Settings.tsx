@@ -14,7 +14,7 @@ export default function Settings() {
   );
 
   const [degree, setDegree] = useState<string | null>(null);
-  const [startYear, setStartYear] = useState<string | null>(null);
+  const [startYear, setStartYear] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,7 +84,7 @@ export default function Settings() {
               <span className="text-xs text-muted-foreground">
                 Choose the year you began your program.
               </span>
-              <Select onValueChange={(selectedYear) => setStartYear(selectedYear)}>
+              <Select onValueChange={(selectedYear) => setStartYear(Number(selectedYear))}>
                 <SelectTrigger className="w-full max-w-sm border-foreground/10">
                   <SelectValue placeholder="Select your start year" />
                 </SelectTrigger>
