@@ -1,5 +1,6 @@
 package app.ospreyplan.backend.usersettings;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,9 +19,9 @@ public class UserSettingsController
     }
 
     @PutMapping
-    public ResponseEntity<UserSettings> updateUserSettings(@RequestBody UserSettingsDTO dto)
+    public ResponseEntity<UserSettings> updateUserSettings(@RequestBody UserSettingsDTO dto, HttpServletRequest request)
     {
-        UserSettings settings = service.updateSettings(dto);
+        UserSettings settings = service.updateSettings(dto, request);
 
         return ResponseEntity.ok(settings);
     }
