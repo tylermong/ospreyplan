@@ -3,7 +3,7 @@ package app.ospreyplan.backend.usersettings;
 public class UserSettingsDTO
 {
     private String degree;
-    private short startYear;
+    private Integer startYear;
 
     public String getDegree()
     {
@@ -15,12 +15,12 @@ public class UserSettingsDTO
         this.degree = degree;
     }
 
-    public short getStartYear()
+    public Integer getStartYear()
     {
         return startYear;
     }
 
-    public void setStartYear(short startYear)
+    public void setStartYear(Integer startYear)
     {
         this.startYear = startYear;
     }
