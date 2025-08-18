@@ -26,7 +26,6 @@ export default function Settings() {
           : "http://localhost:8080";
 
       try {
-        console.log("Fetching settings...");
         const res = await fetch(`${apiBaseUrl}/api/settings`, {
           method: "GET",
           credentials: "include",
@@ -57,7 +56,6 @@ export default function Settings() {
 
     return () => {
       mounted = false;
-      console.log("Settings component unmounted, aborting fetch");
     };
   }, []);
 
