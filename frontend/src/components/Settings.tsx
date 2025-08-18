@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter, } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue, } from "@/components/ui/select";
@@ -17,6 +17,51 @@ export default function Settings() {
   const [startYear, setStartYear] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function load() {
+      const apiBaseUrl =
+        process.env.NODE_ENV === "production"
+          ? "https://ospreyplan.app"
+          : "http://localhost:8080";
+
+      try {
+        console.log("Fetching settings...");
+        const res = await fetch(`${apiBaseUrl}/api/settings`, {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (!mounted) return;
+
+        if (res.ok) {
+          const body = await res.json().catch(() => ({}));
+          setDegree(body.degree ?? null);
+          setStartYear(
+            body.startYear === undefined || body.startYear === null
+              ? null
+              : Number(body.startYear)
+          );
+        }
+        else {
+          const body = await res.json().catch(() => ({}));
+          if (body && body.error) setError(body.error);
+        }
+      }
+      catch (e) {
+        setError("Failed to load settings");
+      }
+    }
+
+    load();
+
+    return () => {
+      mounted = false;
+      console.log("Settings component unmounted, aborting fetch");
+    };
+  }, []);
 
   async function handleSave() {
     setSaving(true);
@@ -61,9 +106,12 @@ export default function Settings() {
               <span className="text-xs text-muted-foreground">
                 Choose the degree program you are enrolled in.
               </span>
-              <Select onValueChange={(selectedDegree) => setDegree(selectedDegree)}>
+              <Select
+                value={degree ?? undefined}
+                onValueChange={(selectedDegree) => setDegree(selectedDegree)}
+              >
                 <SelectTrigger className="w-full max-w-sm border-foreground/10">
-                  <SelectValue placeholder="Select your degree" />
+                  <SelectValue/>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -84,9 +132,12 @@ export default function Settings() {
               <span className="text-xs text-muted-foreground">
                 Choose the year you began your program.
               </span>
-              <Select onValueChange={(selectedYear) => setStartYear(Number(selectedYear))}>
+              <Select
+                value={startYear === null ? undefined : String(startYear)}
+                onValueChange={(selectedYear) => setStartYear(Number(selectedYear))}
+              >
                 <SelectTrigger className="w-full max-w-sm border-foreground/10">
-                  <SelectValue placeholder="Select your start year" />
+                  <SelectValue/>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
