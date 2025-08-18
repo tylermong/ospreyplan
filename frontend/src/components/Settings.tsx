@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardFooter, } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, } from "@/components/ui/card";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue, } from "@/components/ui/select";
 
 export default function Settings() {
@@ -15,7 +14,6 @@ export default function Settings() {
 
   const [degree, setDegree] = useState<string | null>(null);
   const [startYear, setStartYear] = useState<number | null>(null);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -67,7 +65,6 @@ export default function Settings() {
     degree?: string | null;
     startYear?: number | null;
   }) {
-    setSaving(true);
     setError(null);
 
     const payloadDegree =
@@ -99,9 +96,6 @@ export default function Settings() {
     }
     catch (error) {
       setError("Error saving settings");
-    }
-    finally {
-      setSaving(false);
     }
   }
 
