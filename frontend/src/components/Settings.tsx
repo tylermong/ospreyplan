@@ -63,9 +63,21 @@ export default function Settings() {
     };
   }, []);
 
-  async function handleSave() {
+  async function handleSave(updates?: {
+    degree?: string | null;
+    startYear?: number | null;
+  }) {
     setSaving(true);
     setError(null);
+
+    const payloadDegree =
+      updates && Object.prototype.hasOwnProperty.call(updates, "degree")
+        ? updates.degree
+        : degree;
+    const payloadStartYear =
+      updates && Object.prototype.hasOwnProperty.call(updates, "startYear")
+        ? updates.startYear
+        : startYear;
 
     const apiBaseUrl =
       process.env.NODE_ENV === "production"
@@ -77,21 +89,18 @@ export default function Settings() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ degree, startYear }),
+        body: JSON.stringify({ degree: payloadDegree, startYear: payloadStartYear }),
       });
 
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         setError(body.error || "Failed to save settings");
-      }
-      else {
+      } else {
         // TODO: Success toast
       }
-    }
-    catch (error) {
+    } catch (error) {
       setError("Error saving settings");
-    }
-    finally {
+    } finally {
       setSaving(false);
     }
   }
@@ -108,14 +117,17 @@ export default function Settings() {
               </span>
               <Select
                 value={degree ?? undefined}
-                onValueChange={(selectedDegree) => setDegree(selectedDegree)}
+                onValueChange={(selectedDegree) => {
+                  setDegree(selectedDegree);
+                  void handleSave({ degree: selectedDegree });
+                }}
               >
                 <SelectTrigger className="w-full max-w-sm border-foreground/10">
                   <SelectValue/>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel>Degrees</SelectLabel>
+                    <SelectLabel>Degree</SelectLabel>
                     <SelectItem value="bs-computer-science">
                       B.S. in Computer Science
                     </SelectItem>
@@ -134,7 +146,11 @@ export default function Settings() {
               </span>
               <Select
                 value={startYear === null ? undefined : String(startYear)}
-                onValueChange={(selectedYear) => setStartYear(Number(selectedYear))}
+                onValueChange={(selectedYear) => {
+                  const n = Number(selectedYear);
+                  setStartYear(n);
+                  void handleSave({ startYear: n });
+                }}
               >
                 <SelectTrigger className="w-full max-w-sm border-foreground/10">
                   <SelectValue/>
@@ -155,16 +171,7 @@ export default function Settings() {
           {error && <div className="text-red-500 mt-2">{error}</div>}
         </CardContent>
 
-        <CardFooter>
-          <div className="flex w-full justify-end gap-3">
-            <Button variant="ghost" size="sm">
-              Cancel
-            </Button>
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save changes"}
-            </Button>
-          </div>
-        </CardFooter>
+  {/* Buttons removed: settings save automatically when changed */}
       </Card>
     </div>
   );
