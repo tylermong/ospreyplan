@@ -4,12 +4,7 @@ import { useState } from "react";
 import AddBox from "./AddBox";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "./ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, } from "./ui/dropdown-menu";
 import { Pencil, ChevronDown } from "lucide-react";
 
 type Course = { id: number; name: string };

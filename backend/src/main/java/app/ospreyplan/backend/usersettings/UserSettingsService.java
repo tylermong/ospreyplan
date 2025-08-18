@@ -1,0 +1,92 @@
+package app.ospreyplan.backend.usersettings;
+
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+@Service
+public class UserSettingsService
+{
+    private final UserSettingsRepository repository;
+
+    @Value("${supabase.jwt-secret}")
+    private String supabaseJwtSecret;
+
+    public UserSettingsService(UserSettingsRepository repository)
+    {
+        this.repository = repository;
+    }
+
+    public UserSettingsDTO updateSettings(UserSettingsDTO dto, HttpServletRequest request)
+    {
+        UUID userId = getCurrentUserId(request);
+
+        UserSettings settings = repository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User ID not found"));
+
+        settings.setDegree(dto.getDegree());
+        settings.setStartYear(dto.getStartYear());
+
+        UserSettings saved = repository.save(settings);
+
+        UserSettingsDTO out = new UserSettingsDTO();
+        out.setDegree(saved.getDegree());
+        out.setStartYear(saved.getStartYear());
+
+        return out;
+    }
+
+    public UserSettingsDTO getUserSettings(HttpServletRequest request)
+    {
+        UUID userId = getCurrentUserId(request);
+
+        UserSettings settings = repository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User ID not found"));
+
+        UserSettingsDTO dto = new UserSettingsDTO();
+        dto.setDegree(settings.getDegree());
+        dto.setStartYear(settings.getStartYear());
+
+        return dto;
+    }
+
+    private UUID getCurrentUserId(HttpServletRequest request)
+    {
+        String token = null;
+        if (request.getCookies() != null)
+        {
+            for (jakarta.servlet.http.Cookie c : request.getCookies())
+            {
+                if ("sb-access-token".equals(c.getName()))
+                {
+                    token = c.getValue();
+                    break;
+                }
+            }
+        }
+
+        Claims claims;
+        try
+        {
+            claims = Jwts.parserBuilder()
+                .setSigningKey(supabaseJwtSecret.getBytes(StandardCharsets.UTF_8))
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        }
+        catch (JwtException e)
+        {
+            throw new RuntimeException("Invalid or expired token", e);
+        }
+
+        String userIdString = claims.getSubject();
+        return UUID.fromString(userIdString);
+    }
+}
