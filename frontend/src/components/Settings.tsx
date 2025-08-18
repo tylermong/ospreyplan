@@ -95,12 +95,12 @@ export default function Settings() {
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         setError(body.error || "Failed to save settings");
-      } else {
-        // TODO: Success toast
       }
-    } catch (error) {
+    }
+    catch (error) {
       setError("Error saving settings");
-    } finally {
+    }
+    finally {
       setSaving(false);
     }
   }
