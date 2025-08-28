@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import AddBox from "./AddBox";
+import { AddCourseDialog } from "./AddCourseDialog";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, } from "./ui/dropdown-menu";
-import { Pencil, ChevronDown } from "lucide-react";
+import { Pencil, ChevronDown, X } from "lucide-react";
 
 type Course = { id: number; name: string };
 type Semester = { id: number; title: string; term: string; year: number; courses: Course[] };
@@ -73,7 +74,7 @@ export default function Planner() {
     });
   }
 
-  function addCourse(semesterId: number) {
+  function addCourse(semesterId: number, courseName: string = "Untitled Course") {
     setSemesters((prev) =>
       prev.map((semester) =>
         semester.id === semesterId
@@ -82,10 +83,23 @@ export default function Planner() {
               courses: [
                 ...semester.courses,
                 {
-                  id: prev.length + 1,
-                  name: "Untitled Course",
+                  id: semester.courses.length + 1,
+                  name: courseName,
                 },
               ],
+            }
+          : semester
+      )
+    );
+  }
+
+  function removeCourse(semesterId: number, courseId: number) {
+    setSemesters((prev) =>
+      prev.map((semester) =>
+        semester.id === semesterId
+          ? {
+              ...semester,
+              courses: semester.courses.filter((course) => course.id !== courseId),
             }
           : semester
       )
@@ -127,6 +141,7 @@ export default function Planner() {
       {semesters.map((semester) => {
         const isEditing = editingSemesterId === semester.id;
         return (
+          /* Semester cards */
           <Card key={semester.id}>
             <CardHeader className="items-center">
               <CardTitle>
@@ -187,23 +202,31 @@ export default function Planner() {
                 )}
               </CardAction>
             </CardHeader>
+
+            {/* Courses */}
             <CardContent className="space-y-3">
             <div className="space-y-2">
               {semester.courses.map((course) => (
                 <div
                   key={course.id}
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-md border px-3 py-2 text-sm flex items-center justify-between"
                 >
-                  {course.name}
+                  <span className="flex-1">{course.name}</span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => removeCourse(semester.id, course.id)}
+                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                    aria-label="Remove course"
+                    title="Remove course"
+                  >
+                    <X size={14} />
+                  </Button>
                 </div>
               ))}
             </div>
 
-            <AddBox
-              label="Add course"
-              onClick={() => addCourse(semester.id)}
-              className="h-28"
-            />
+            <AddCourseDialog onAddCourse={(courseName: string) => addCourse(semester.id, courseName)} />
             </CardContent>
           </Card>
         );
