@@ -7,8 +7,9 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, } from "./ui/dropdown-menu";
 import { Pencil, ChevronDown, X } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-type Course = { id: number; name: string };
+type Course = { id: number; name: string; credits: number };
 type Semester = { id: number; title: string; term: string; year: number; courses: Course[] };
 
 export default function Planner() {
@@ -16,6 +17,8 @@ export default function Planner() {
   const [editingSemesterId, setEditingSemesterId] = useState<number | null>(null);
   const [draftTerm, setDraftTerm] = useState<string>("Fall");
   const [draftYear, setDraftYear] = useState<number>(new Date().getFullYear());
+  const [showCreditWarning, setShowCreditWarning] = useState(false);
+  const [pendingCourse, setPendingCourse] = useState<{ semesterId: number; courseName: string; credits: number } | null>(null);
 
   const TERMS = ["Summer", "Fall", "Winter", "Spring"];
   const YEAR_START = 2018;
@@ -74,7 +77,19 @@ export default function Planner() {
     });
   }
 
-  function addCourse(semesterId: number, courseName: string = "Untitled Course") {
+  function addCourse(semesterId: number, courseName: string, credits: number) {
+    const semester = semesters.find(s => s.id === semesterId);
+    if (!semester) return;
+
+    const currentCredits = calculateTotalCredits(semester);
+    const newTotalCredits = currentCredits + credits;
+
+    if (newTotalCredits > 21) {
+      setPendingCourse({ semesterId, courseName, credits });
+      setShowCreditWarning(true);
+      return;
+    }
+
     setSemesters((prev) =>
       prev.map((semester) =>
         semester.id === semesterId
@@ -87,6 +102,7 @@ export default function Planner() {
                     {
                       id: semester.courses.length + 1,
                       name: courseName,
+                      credits: credits,
                     },
                   ],
             }
@@ -106,6 +122,10 @@ export default function Planner() {
           : semester
       )
     );
+  }
+
+  function calculateTotalCredits(semester: Semester): number {
+    return semester.courses.reduce((total, course) => total + course.credits, 0);
   }
 
   function startRenamingSemester(semester: Semester) {
@@ -136,6 +156,40 @@ export default function Planner() {
     setEditingSemesterId(null);
     setDraftTerm("Fall");
     setDraftYear(new Date().getFullYear());
+  }
+
+  function confirmAddCourse() {
+    if (!pendingCourse) return;
+
+    const { semesterId, courseName, credits } = pendingCourse;
+
+    setSemesters((prev) =>
+      prev.map((semester) =>
+        semester.id === semesterId
+          ? {
+              ...semester,
+              courses: semester.courses.some((course) => course.name === courseName)
+                ? semester.courses
+                : [
+                    ...semester.courses,
+                    {
+                      id: semester.courses.length + 1,
+                      name: courseName,
+                      credits: credits,
+                    },
+                  ],
+            }
+          : semester
+      )
+    );
+
+    setShowCreditWarning(false);
+    setPendingCourse(null);
+  }
+
+  function cancelAddCourse() {
+    setShowCreditWarning(false);
+    setPendingCourse(null);
   }
 
   return (
@@ -228,7 +282,7 @@ export default function Planner() {
               ))}
             </div>
 
-            <AddCourseDialog onAddCourse={(courseName: string) => addCourse(semester.id, courseName)} />
+            <AddCourseDialog onAddCourse={(courseName: string, credits: number) => addCourse(semester.id, courseName, credits)} />
             </CardContent>
           </Card>
         );
@@ -239,6 +293,31 @@ export default function Planner() {
         onClick={addSemester}
         className="h-60 col-span-1"
       />
+
+      <Dialog open={showCreditWarning} onOpenChange={setShowCreditWarning}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Credit Limit Warning</DialogTitle>
+            <DialogDescription>
+              Adding this course will bring your total credits to{" "}
+              {pendingCourse && (() => {
+                const semester = semesters.find(s => s.id === pendingCourse.semesterId);
+                return semester ? calculateTotalCredits(semester) + pendingCourse.credits : 0;
+              })()}{" "}
+              credits, which exceeds the recommended limit of 21 credits per semester.
+              Are you sure you want to continue?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={cancelAddCourse}>
+              Cancel
+            </Button>
+            <Button onClick={confirmAddCourse}>
+              Add Course Anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
