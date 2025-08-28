@@ -311,8 +311,10 @@ export default function Planner() {
                   const semester = semesters.find(s => s.id === pendingCourse.semesterId);
                   return semester ? calculateTotalCredits(semester) + pendingCourse.credits : 0;
                 })()}{" "}
-                credits, which exceeds the recommended limit of 21 credits per semester.
-                Are you sure you want to continue?
+                credits, which exceeds Stockton's 21 credit per semester limit. 
+                See{" "}
+                <a href="https://stockton.edu/academic-advising/academic-information/academic-overload.html" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline'}}>Academic Overload</a>
+                {" "}for more information.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
