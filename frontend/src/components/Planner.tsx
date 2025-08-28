@@ -8,6 +8,7 @@ import { Button } from "./ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, } from "./ui/dropdown-menu";
 import { Pencil, ChevronDown, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 type Course = { id: number; name: string; credits: number };
 type Semester = { id: number; title: string; term: string; year: number; courses: Course[] };
@@ -81,6 +82,13 @@ export default function Planner() {
     const semester = semesters.find(s => s.id === semesterId);
     if (!semester) return;
 
+    const isDuplicate = semester.courses.some((course) => course.name === courseName);
+    
+    if (isDuplicate) {
+      toast.error("This course already exists in the semester.", {position: 'top-center', style: { backgroundColor: 'var(--destructive)', color: 'var(--destructive-foreground)'}, closeButton: true});
+      return;
+    }
+
     const currentCredits = calculateTotalCredits(semester);
     const newTotalCredits = currentCredits + credits;
 
@@ -95,16 +103,14 @@ export default function Planner() {
         semester.id === semesterId
           ? {
               ...semester,
-              courses: semester.courses.some((course) => course.name === courseName)
-                ? semester.courses
-                : [
-                    ...semester.courses,
-                    {
-                      id: semester.courses.length + 1,
-                      name: courseName,
-                      credits: credits,
-                    },
-                  ],
+              courses: [
+                ...semester.courses,
+                {
+                  id: semester.courses.length + 1,
+                  name: courseName,
+                  credits: credits,
+                },
+              ],
             }
           : semester
       )
@@ -193,131 +199,133 @@ export default function Planner() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
-      {semesters.map((semester) => {
-        const isEditing = editingSemesterId === semester.id;
-        return (
-          /* Semester cards */
-          <Card key={semester.id}>
-            <CardHeader className="items-center">
-              <CardTitle>
-                {isEditing ? (
-                  <div className="flex w-full items-center gap-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="rounded-md px-2 py-1 text-sm flex items-center gap-2">
-                          <span>{draftTerm}</span>
-                          <ChevronDown className="size-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent side="bottom" className="w-40">
-                        {TERMS.map((t) => (
-                          <DropdownMenuItem key={t} onSelect={() => setDraftTerm(t)}>
-                            {t}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+    <div className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
+        {semesters.map((semester) => {
+          const isEditing = editingSemesterId === semester.id;
+          return (
+            /* Semester cards */
+            <Card key={semester.id}>
+              <CardHeader className="items-center">
+                <CardTitle>
+                  {isEditing ? (
+                    <div className="flex w-full items-center gap-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="rounded-md px-2 py-1 text-sm flex items-center gap-2">
+                            <span>{draftTerm}</span>
+                            <ChevronDown className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="bottom" className="w-40">
+                          {TERMS.map((t) => (
+                            <DropdownMenuItem key={t} onSelect={() => setDraftTerm(t)}>
+                              {t}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="rounded-md px-2 py-1 text-sm flex items-center gap-2">
-                          <span>{draftYear}</span>
-                          <ChevronDown className="size-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent side="bottom" className="w-36 max-h-56 overflow-auto">
-                        {years.map((y) => (
-                          <DropdownMenuItem key={y} onSelect={() => setDraftYear(y)}>
-                            {y}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                ) : (
-                  semester.title
-                )}
-              </CardTitle>
-              <CardAction className="row-span-1 self-center">
-                {isEditing ? (
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline" onClick={commitRenameSemester}>Save</Button>
-                    <Button size="sm" variant="ghost" onClick={cancelRenameSemester}>Cancel</Button>
-                  </div>
-                ) : (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => startRenamingSemester(semester)}
-                    aria-label="Rename semester"
-                    title="Rename"
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="rounded-md px-2 py-1 text-sm flex items-center gap-2">
+                            <span>{draftYear}</span>
+                            <ChevronDown className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="bottom" className="w-36 max-h-56 overflow-auto">
+                          {years.map((y) => (
+                            <DropdownMenuItem key={y} onSelect={() => setDraftYear(y)}>
+                              {y}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  ) : (
+                    semester.title
+                  )}
+                </CardTitle>
+                <CardAction className="row-span-1 self-center">
+                  {isEditing ? (
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={commitRenameSemester}>Save</Button>
+                      <Button size="sm" variant="ghost" onClick={cancelRenameSemester}>Cancel</Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => startRenamingSemester(semester)}
+                      aria-label="Rename semester"
+                      title="Rename"
+                    >
+                      <Pencil />
+                    </Button>
+                  )}
+                </CardAction>
+              </CardHeader>
+
+              {/* Courses */}
+              <CardContent className="space-y-3">
+              <div className="space-y-2">
+                {semester.courses.map((course) => (
+                  <div
+                    key={course.id}
+                    className="rounded-md border px-3 py-2 text-sm flex items-center justify-between"
                   >
-                    <Pencil />
-                  </Button>
-                )}
-              </CardAction>
-            </CardHeader>
+                    <span className="flex-1">{course.name}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => removeCourse(semester.id, course.id)}
+                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                      aria-label="Remove course"
+                      title="Remove course"
+                    >
+                      <X size={14} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
 
-            {/* Courses */}
-            <CardContent className="space-y-3">
-            <div className="space-y-2">
-              {semester.courses.map((course) => (
-                <div
-                  key={course.id}
-                  className="rounded-md border px-3 py-2 text-sm flex items-center justify-between"
-                >
-                  <span className="flex-1">{course.name}</span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => removeCourse(semester.id, course.id)}
-                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                    aria-label="Remove course"
-                    title="Remove course"
-                  >
-                    <X size={14} />
-                  </Button>
-                </div>
-              ))}
-            </div>
+              <AddCourseDialog onAddCourse={(courseName: string, credits: number) => addCourse(semester.id, courseName, credits)} />
+              </CardContent>
+            </Card>
+          );
+        })}
 
-            <AddCourseDialog onAddCourse={(courseName: string, credits: number) => addCourse(semester.id, courseName, credits)} />
-            </CardContent>
-          </Card>
-        );
-      })}
+        <AddBox
+          label="Add semester"
+          onClick={addSemester}
+          className="h-60 col-span-1"
+        />
 
-      <AddBox
-        label="Add semester"
-        onClick={addSemester}
-        className="h-60 col-span-1"
-      />
-
-      <Dialog open={showCreditWarning} onOpenChange={setShowCreditWarning}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Credit Limit Warning</DialogTitle>
-            <DialogDescription>
-              Adding this course will bring your total credits to{" "}
-              {pendingCourse && (() => {
-                const semester = semesters.find(s => s.id === pendingCourse.semesterId);
-                return semester ? calculateTotalCredits(semester) + pendingCourse.credits : 0;
-              })()}{" "}
-              credits, which exceeds the recommended limit of 21 credits per semester.
-              Are you sure you want to continue?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={cancelAddCourse}>
-              Cancel
-            </Button>
-            <Button onClick={confirmAddCourse}>
-              Add Course Anyway
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <Dialog open={showCreditWarning} onOpenChange={setShowCreditWarning}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Credit Limit Warning</DialogTitle>
+              <DialogDescription>
+                Adding this course will bring your total credits to{" "}
+                {pendingCourse && (() => {
+                  const semester = semesters.find(s => s.id === pendingCourse.semesterId);
+                  return semester ? calculateTotalCredits(semester) + pendingCourse.credits : 0;
+                })()}{" "}
+                credits, which exceeds the recommended limit of 21 credits per semester.
+                Are you sure you want to continue?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={cancelAddCourse}>
+                Cancel
+              </Button>
+              <Button onClick={confirmAddCourse}>
+                Add Course Anyway
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
