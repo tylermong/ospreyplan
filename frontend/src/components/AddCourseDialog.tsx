@@ -12,6 +12,7 @@ interface Course {
   number: string;
   section: string;
   name: string;
+  credits: number;
 }
 
 const courses: Course[] = [
@@ -20,47 +21,54 @@ const courses: Course[] = [
     number: "2101",
     section: "001",
     name: "Introduction to Computer Science",
+    credits: 4
   },
   {
     subject: "MATH",
     number: "1201",
     section: "002",
     name: "Calculus I",
+    credits: 5
   },
   {
     subject: "ENGL",
     number: "1101",
     section: "003",
     name: "English Composition",
+    credits: 4
   },
   {
     subject: "PHYS",
     number: "1301",
     section: "001",
     name: "Physics I",
+    credits: 5
   },
   {
     subject: "HIST",
     number: "1401",
     section: "002",
     name: "World History",
+    credits: 4
   },
   {
     subject: "CSCI",
     number: "3301",
     section: "001",
     name: "Computer Organization",
+    credits: 4
   },
   {
     subject: "CIST",
     number: "3550",
     section: "002",
     name: "Foundations of Cybersecurity",
+    credits: 4
   },
 ];
 
 interface AddCourseDialogProps {
-  onAddCourse: (courseName: string) => void;
+  onAddCourse: (courseName: string, credits: number) => void;
 }
 
 export function AddCourseDialog({ onAddCourse }: AddCourseDialogProps) {
@@ -79,7 +87,7 @@ export function AddCourseDialog({ onAddCourse }: AddCourseDialogProps) {
   const handleAddCourse = () => {
     if (selectedCourse) {
       const courseName = `${selectedCourse.subject} ${selectedCourse.number} ${selectedCourse.section} - ${selectedCourse.name}`;
-      onAddCourse(courseName);
+      onAddCourse(courseName, selectedCourse.credits);
       setSelectedCourse(null);
       setOpen(false);
     }
