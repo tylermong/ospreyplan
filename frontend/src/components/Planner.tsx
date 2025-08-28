@@ -80,13 +80,15 @@ export default function Planner() {
         semester.id === semesterId
           ? {
               ...semester,
-              courses: [
-                ...semester.courses,
-                {
-                  id: semester.courses.length + 1,
-                  name: courseName,
-                },
-              ],
+              courses: semester.courses.some((course) => course.name === courseName)
+                ? semester.courses
+                : [
+                    ...semester.courses,
+                    {
+                      id: semester.courses.length + 1,
+                      name: courseName,
+                    },
+                  ],
             }
           : semester
       )
