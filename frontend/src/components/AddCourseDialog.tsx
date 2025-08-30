@@ -8,77 +8,105 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, } from "@/components/ui/dialog";
 
 interface Course {
-  subject: string;
-  number: string;
-  section: string;
+  id: {
+    subject: string;
+    courseNumber: number;
+    section: number;
+  };
   name: string;
   credits: number;
+  capacity: number;
+  filled: number;
+  remaining: number;
+  term: number;
 }
-
-const courses: Course[] = [
-  {
-    subject: "CSCI",
-    number: "2101",
-    section: "001",
-    name: "Introduction to Computer Science",
-    credits: 4
-  },
-  {
-    subject: "MATH",
-    number: "1201",
-    section: "002",
-    name: "Calculus I",
-    credits: 5
-  },
-  {
-    subject: "ENGL",
-    number: "1101",
-    section: "003",
-    name: "English Composition",
-    credits: 4
-  },
-  {
-    subject: "PHYS",
-    number: "1301",
-    section: "001",
-    name: "Physics I",
-    credits: 5
-  },
-  {
-    subject: "HIST",
-    number: "1401",
-    section: "002",
-    name: "World History",
-    credits: 4
-  },
-  {
-    subject: "CSCI",
-    number: "3301",
-    section: "001",
-    name: "Computer Organization",
-    credits: 4
-  },
-  {
-    subject: "CIST",
-    number: "3550",
-    section: "002",
-    name: "Foundations of Cybersecurity",
-    credits: 4
-  },
-];
 
 interface AddCourseDialogProps {
   onAddCourse: (courseName: string, credits: number) => void;
 }
 
+let coursesCache: Course[] | null = null;
+let coursesPromise: Promise<Course[]> | null = null;
+
+async function fetchCoursesOnce(): Promise<Course[]> {
+  if (coursesCache) return coursesCache;
+  if (coursesPromise) return coursesPromise;
+
+  coursesPromise = (async () => {
+    const apiBaseUrl =
+      process.env.NODE_ENV === "production"
+        ? "https://ospreyplan.app"
+        : "http://localhost:8080";
+
+    const res = await fetch(`${apiBaseUrl}/api/courses`, {
+      method: "GET",
+      credentials: "include",
+    });
+    const items: any[] = await res.json();
+
+    const normalized = items.map((it: any) => {
+      return {
+        ...it,
+        id: {
+          subject: it.courseId.subject,
+          courseNumber: Number(it.courseId.courseNumber),
+          section: Number(it.courseId.section),
+        },
+      } as Course;
+    });
+
+    coursesCache = normalized;
+    coursesPromise = null;
+    return normalized;
+  })();
+
+  return coursesPromise;
+}
+
 export function AddCourseDialog({ onAddCourse }: AddCourseDialogProps) {
   const [open, setOpen] = React.useState(false);
+  const [courses, setCourses] = React.useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = React.useState<Course | null>(
     null
   );
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
 
-  const filteredCourses = courses.filter((course) =>
+  React.useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      const normalized = await fetchCoursesOnce();
+      if (cancelled) return;
+      setCourses(normalized);
+      setLoading(false);
+    }
+
+    if (courses.length === 0) load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  type FlattenedCourse = {
+    subject: string;
+    number: string;
+    section: string;
+    name: string;
+    credits: number;
+    original: Course;
+  };
+
+  const flattenedCourses: FlattenedCourse[] = courses.map((c) => ({
+    subject: c.id.subject,
+    number: c.id.courseNumber.toString(),
+    section: c.id.section.toString(),
+    name: c.name,
+    credits: c.credits,
+    original: c,
+  }));
+
+  const filteredCourses = flattenedCourses.filter((course) =>
     `${course.subject} ${course.number} ${course.section} ${course.name}`
       .toLowerCase()
       .includes(searchQuery.toLowerCase())
@@ -86,7 +114,7 @@ export function AddCourseDialog({ onAddCourse }: AddCourseDialogProps) {
 
   const handleAddCourse = () => {
     if (selectedCourse) {
-      const courseName = `${selectedCourse.subject} ${selectedCourse.number} ${selectedCourse.section} - ${selectedCourse.name}`;
+      const courseName = `${selectedCourse.id.subject} ${selectedCourse.id.courseNumber} ${selectedCourse.id.section} - ${selectedCourse.name}`;
       onAddCourse(courseName, selectedCourse.credits);
       setSelectedCourse(null);
       setOpen(false);
@@ -120,11 +148,11 @@ export function AddCourseDialog({ onAddCourse }: AddCourseDialogProps) {
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {filteredCourses.length > 0 ? (
               filteredCourses.map((course, index) => {
-                const isSelected = selectedCourse === course;
+                const isSelected = selectedCourse === course.original;
                 return (
                   <button
                     key={index}
-                    onClick={() => setSelectedCourse(course)}
+                    onClick={() => setSelectedCourse(course.original)}
                     className={cn(
                       "w-full px-4 py-3 text-left rounded-[var(--radius)] border transition-all",
                       isSelected
