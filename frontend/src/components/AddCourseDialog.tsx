@@ -202,7 +202,7 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
           <DialogHeader>
             <DialogTitle>Add Course</DialogTitle>
           </DialogHeader>
-          <div className="space-y-0">
+          <div className="space-y-2">
             <Input
               placeholder="Search courses..."
               value={searchQuery}
