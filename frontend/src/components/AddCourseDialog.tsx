@@ -190,6 +190,11 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
     setSelectedKey(key);
   }, []);
 
+  const MAX_SHOWN = 250;
+  const shownCourses = React.useMemo(() => {
+    return filteredCourses.slice(0, MAX_SHOWN);
+  }, [filteredCourses]);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -219,7 +224,7 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
               )}
               {!loading && filteredCourses.length > 0 && (
                 <div>
-                  {filteredCourses.map((course) => (
+                  {shownCourses.map((course) => (
                     <CourseRow
                       key={course.key}
                       course={course}
@@ -227,6 +232,12 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
                       onSelect={handleSelect}
                     />
                   ))}
+
+                  {filteredCourses.length > MAX_SHOWN && (
+                    <p className="text-muted-foreground text-sm text-center py-2">
+                      Showing {MAX_SHOWN} of {filteredCourses.length} courses. Try searching to narrow results.
+                    </p>
+                  )}
                 </div>
               )}
               {!loading && filteredCourses.length === 0 && (
