@@ -12,7 +12,7 @@ interface Course {
   id: {
     subject: string;
     courseNumber: number;
-    section: number;
+    section: string;
   };
   name: string;
   credits: number;
@@ -58,7 +58,7 @@ async function fetchCoursesOnce(): Promise<Course[]> {
     const items: unknown[] = await res.json();
 
     type RawCourse = {
-      courseId: { subject: string; courseNumber: string | number; section: string | number };
+      courseId: { subject: string; courseNumber: number; section: string };
       credits?: number;
       name?: string;
       [k: string]: unknown;
@@ -70,7 +70,7 @@ async function fetchCoursesOnce(): Promise<Course[]> {
         id: {
           subject: it.courseId.subject,
           courseNumber: Number(it.courseId.courseNumber),
-          section: Number(it.courseId.section),
+          section: it.courseId.section,
         },
         name: it.name ?? "",
         credits: Number(it.credits ?? 0),
@@ -97,10 +97,19 @@ function getCourseKey(c: Course): string {
 async function ensureFlattenedCourses(): Promise<FlattenedCourse[]> {
   if (flattenedCache) return flattenedCache;
   const normalized = await fetchCoursesOnce();
-  flattenedCache = normalized.map((c) => {
+
+  const sorted = [...normalized].sort((a, b) => {
+    const subjectCmp = a.id.subject.localeCompare(b.id.subject);
+    if (subjectCmp !== 0) return subjectCmp;
+    const numberCmp = Number(a.id.courseNumber) - Number(b.id.courseNumber);
+    if (numberCmp !== 0) return numberCmp;
+    return String(a.id.section).localeCompare(String(b.id.section));
+  });
+
+  flattenedCache = sorted.map((c) => {
     const subject = c.id.subject;
     const number = String(c.id.courseNumber);
-    const section = String(c.id.section);
+    const section = c.id.section;
     const name = c.name;
     const searchIndex = `${subject} ${number} ${section} ${name}`.toLowerCase();
     return {
