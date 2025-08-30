@@ -7,14 +7,14 @@ public class CourseId implements Serializable
 {
     private String subject;
     private Integer courseNumber;
-    private Integer section;
+    private String section;
 
     public CourseId()
     {
 
     }
 
-    public CourseId(String subject, Integer courseNumber, Integer section)
+    public CourseId(String subject, Integer courseNumber, String section)
     {
         this.subject = subject;
         this.courseNumber = courseNumber;
@@ -41,12 +41,12 @@ public class CourseId implements Serializable
         this.courseNumber = courseNumber;
     }
 
-    public Integer getSection()
+    public String getSection()
     {
         return section;
     }
 
-    public void setSection(Integer section)
+    public void setSection(String section)
     {
         this.section = section;
     }
