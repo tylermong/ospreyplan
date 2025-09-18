@@ -19,7 +19,7 @@ public class PlannedSemester
 
     private String title;
 
-    @OneToMany(mappedBy = "semester", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "plannedSemester", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PlannedCourse> plannedCourses;
 
     public UUID getId()
