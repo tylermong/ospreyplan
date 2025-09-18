@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddBox from "./AddBox";
 import { AddCourseDialog } from "./AddCourseDialog";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -10,16 +10,24 @@ import { Pencil, ChevronDown, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-type Course = { id: number; name: string; credits: number };
-type Semester = { id: number; title: string; term: string; year: number; courses: Course[] };
+type Course = { id: number | string; name: string; credits: number };
+type Semester = { id: string; title: string; term: string; year: number; courses: Course[] };
+
+type BackendSemester = {
+  id: string;
+  title: string;
+  userId: string;
+  plannedCourses: Array<{ id: string; subject: string; courseNumber: number; section: string }>;
+};
 
 export default function Planner() {
   const [semesters, setSemesters] = useState<Semester[]>([]);
-  const [editingSemesterId, setEditingSemesterId] = useState<number | null>(null);
+  const [editingSemesterId, setEditingSemesterId] = useState<string | null>(null);
   const [draftTerm, setDraftTerm] = useState<string>("Fall");
   const [draftYear, setDraftYear] = useState<number>(new Date().getFullYear());
   const [showCreditWarning, setShowCreditWarning] = useState(false);
-  const [pendingCourse, setPendingCourse] = useState<{ semesterId: number; courseName: string; credits: number } | null>(null);
+  const [pendingCourse, setPendingCourse] = useState<{ semesterId: string; courseName: string; credits: number } | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const TERMS = ["Summer", "Fall", "Winter", "Spring"];
   const YEAR_START = 2018;
@@ -30,55 +38,88 @@ export default function Planner() {
   ).reverse();
 
   function addSemester() {
-    setSemesters((prev) => {
-      const currentYear = new Date().getFullYear();
-      const last = prev[prev.length - 1];
+    // create via backend if userId available, otherwise local
+    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
-      // Default values
-      let term = "Fall";
-      let year = currentYear; // TODO: Set this to user's start year (implement new user procedure)
+    if (!userId) {
+      // fallback to local behavior
+      setSemesters((prev) => {
+        const currentYear = new Date().getFullYear();
+        const last = prev[prev.length - 1];
+        let term = "Fall";
+        let year = currentYear;
+        if (last) {
+          const lastTerm = last.term;
+          const lastYear = last.year ?? currentYear;
+          if (lastTerm === "Summer") {
+            term = "Fall";
+            year = lastYear;
+          } else if (lastTerm === "Fall") {
+            term = "Spring";
+            year = lastYear + 1;
+          } else if (lastTerm === "Winter") {
+            term = "Spring";
+            year = lastYear;
+          } else if (lastTerm === "Spring") {
+            term = "Fall";
+            year = lastYear;
+          }
+        }
+        return [
+          ...prev,
+          {
+            id: String(prev.length + 1),
+            term,
+            year,
+            title: `${term} ${year}`,
+            courses: [],
+          },
+        ];
+      });
+      return;
+    }
 
-      // Compute next term/year based on last semester
-      if (last) {
-        const lastTerm = last.term;
-        const lastYear = last.year ?? currentYear;
-
-        if (lastTerm === "Summer") {
-          term = "Fall";
-          year = lastYear;
-        }
-        else if (lastTerm === "Fall") {
-          term = "Spring";
-          year = lastYear + 1;
-        }
-        else if (lastTerm === "Winter") {
-          term = "Spring";
-          year = lastYear;
-        }
-        else if (lastTerm === "Spring") {
-          term = "Fall";
-          year = lastYear;
-        }
-        else {
-          term = "Fall";
-          year = lastYear;
-        }
+    // create a backend semester with title
+    const currentYear = new Date().getFullYear();
+    const last = semesters[semesters.length - 1];
+    let term = "Fall";
+    let year = currentYear;
+    if (last) {
+      const lastTerm = last.term;
+      const lastYear = last.year ?? currentYear;
+      if (lastTerm === "Summer") {
+        term = "Fall";
+        year = lastYear;
+      } else if (lastTerm === "Fall") {
+        term = "Spring";
+        year = lastYear + 1;
+      } else if (lastTerm === "Winter") {
+        term = "Spring";
+        year = lastYear;
+      } else if (lastTerm === "Spring") {
+        term = "Fall";
+        year = lastYear;
       }
+    }
 
-      return [
-        ...prev,
-        {
-          id: prev.length + 1,
-          term,
-          year,
-          title: `${term} ${year}`,
-          courses: [],
-        },
-      ];
-    });
+    const title = `${term} ${year}`;
+    fetch(`${apiBase}/api/semesters?userId=${userId}&title=${encodeURIComponent(title)}`, {
+      method: "POST",
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data: BackendSemester) => {
+        setSemesters((prev) => [
+          ...prev,
+          { id: data.id, title: data.title, term, year, courses: [] },
+        ]);
+      })
+      .catch((e) => {
+        console.error("Failed to create semester", e);
+      });
   }
 
-  function addCourse(semesterId: number, courseName: string, credits: number) {
+  function addCourse(semesterId: string, courseName: string, credits: number) {
     const semester = semesters.find(s => s.id === semesterId);
     if (!semester) return;
 
@@ -89,12 +130,51 @@ export default function Planner() {
       return;
     }
 
-    const currentCredits = calculateTotalCredits(semester);
-    const newTotalCredits = currentCredits + credits;
+  const currentCredits = calculateTotalCredits(semester);
+  const newTotalCredits = currentCredits + credits;
 
     if (newTotalCredits > 21) {
       setPendingCourse({ semesterId, courseName, credits });
       setShowCreditWarning(true);
+      return;
+    }
+
+    // If backend userId is present, post to backend to create the course record
+    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
+    if (userId) {
+      const match = courseName.match(/^([A-Z]+)\s+(\d+)\s+([^\s]+)\b/);
+      let subject = "";
+      let courseNumber = 0;
+      let section = "";
+      if (match) {
+        subject = match[1];
+        courseNumber = Number(match[2]);
+        section = match[3];
+      }
+
+      fetch(`${apiBase}/api/semesters/${semesterId}/courses?subject=${encodeURIComponent(subject)}&courseNumber=${courseNumber}&section=${encodeURIComponent(section)}`, {
+        method: "POST",
+        credentials: "include",
+      })
+        .then((res) => res.json())
+        .then((createdCourse) => {
+          setSemesters((prev) =>
+            prev.map((s) =>
+              s.id === semesterId
+                ? {
+                    ...s,
+                    courses: [
+                      ...s.courses,
+                      { id: createdCourse.id ?? `${s.courses.length + 1}`, name: courseName, credits },
+                    ],
+                  }
+                : s
+            )
+          );
+        })
+        .catch((e) => {
+          console.error("Failed to add course to semester", e);
+        });
       return;
     }
 
@@ -117,7 +197,7 @@ export default function Planner() {
     );
   }
 
-  function removeCourse(semesterId: number, courseId: number) {
+  function removeCourse(semesterId: string, courseId: number | string) {
     setSemesters((prev) =>
       prev.map((semester) =>
         semester.id === semesterId
@@ -133,6 +213,38 @@ export default function Planner() {
   function calculateTotalCredits(semester: Semester): number {
     return semester.courses.reduce((total, course) => total + course.credits, 0);
   }
+
+  // Load current user and semesters on mount
+  useEffect(() => {
+    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
+    fetch(`${apiBase}/auth/me`, { method: "GET", credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("not authenticated");
+        return res.json();
+      })
+      .then((user) => {
+        if (user && user.id) {
+          setUserId(user.id);
+          // fetch semesters
+          fetch(`${apiBase}/api/semesters/user/${user.id}`, { method: "GET", credentials: "include" })
+            .then((r) => r.json())
+            .then((data: BackendSemester[]) => {
+              const mapped: Semester[] = (data || []).map((s) => ({
+                id: s.id,
+                title: s.title,
+                term: s.title.split(" ")[0] ?? "Fall",
+                year: Number(s.title.split(" ")[1]) || new Date().getFullYear(),
+                courses: (s.plannedCourses || []).map((c) => ({ id: c.id, name: `${c.subject} ${c.courseNumber} ${c.section}`, credits: 0 })),
+              }));
+              setSemesters(mapped);
+            })
+            .catch((e) => console.error("failed to load semesters", e));
+        }
+      })
+      .catch(() => {
+        // not signed in or failed - keep local state
+      });
+  }, []);
 
   function startRenamingSemester(semester: Semester) {
     setEditingSemesterId(semester.id);
@@ -169,25 +281,8 @@ export default function Planner() {
 
     const { semesterId, courseName, credits } = pendingCourse;
 
-    setSemesters((prev) =>
-      prev.map((semester) =>
-        semester.id === semesterId
-          ? {
-              ...semester,
-              courses: semester.courses.some((course) => course.name === courseName)
-                ? semester.courses
-                : [
-                    ...semester.courses,
-                    {
-                      id: semester.courses.length + 1,
-                      name: courseName,
-                      credits: credits,
-                    },
-                  ],
-            }
-          : semester
-      )
-    );
+  // reuse addCourse which will perform backend call if userId present
+  addCourse(String(semesterId), courseName, credits);
 
     setShowCreditWarning(false);
     setPendingCourse(null);
@@ -289,7 +384,10 @@ export default function Planner() {
                 ))}
               </div>
 
-              <AddCourseDialog onAddCourse={(courseName: string, credits: number) => addCourse(semester.id, courseName, credits)} />
+              <AddCourseDialog onAddCourse={(subject: string, courseNumber: number, section: string, credits: number) => {
+                const courseName = `${subject} ${courseNumber} ${section}`;
+                addCourse(semester.id, courseName, credits);
+              }} />
               </CardContent>
             </Card>
           );
