@@ -289,8 +289,8 @@ const CourseRow = React.memo(React.forwardRef<HTMLDivElement, {
       >
         <div className="p-4 flex justify-between items-center">
           <div>
-            <p className="text-sm text-muted-foreground">{course.subject} {course.number} {course.section}</p>
-            <p className="font-medium text-card-foreground">{course.name}</p>
+            <p className="text-sm text-inherit">{course.subject} {course.number} {course.section}</p>
+            <p className="font-medium text-inherit">{course.name}</p>
           </div>
         </div>
       </button>
