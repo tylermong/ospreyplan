@@ -254,7 +254,6 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleCancel}>
-                  {/* ...existing code... */}
               Cancel
             </Button>
             <Button onClick={handleAddCourse} disabled={!selectedCourse || isPending}>
