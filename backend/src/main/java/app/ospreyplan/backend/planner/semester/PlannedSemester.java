@@ -1,6 +1,7 @@
 package app.ospreyplan.backend.planner.semester;
 
 import app.ospreyplan.backend.planner.course.PlannedCourse;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class PlannedSemester
     private String title;
 
     @OneToMany(mappedBy = "plannedSemester", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<PlannedCourse> plannedCourses;
 
     public UUID getId()

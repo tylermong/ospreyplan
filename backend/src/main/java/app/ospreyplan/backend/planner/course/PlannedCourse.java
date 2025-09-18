@@ -1,6 +1,7 @@
 package app.ospreyplan.backend.planner.course;
 
 import app.ospreyplan.backend.planner.semester.PlannedSemester;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.util.UUID;
@@ -15,6 +16,7 @@ public class PlannedCourse
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "semester_id")
+    @JsonBackReference
     private PlannedSemester plannedSemester;
 
     private String subject;
