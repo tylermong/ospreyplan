@@ -43,7 +43,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           avatar: u.user_metadata.avatar_url,
         });
       })
-      .catch(() => {});
+      .catch((error) => {
+        console.error("Failed to fetch user data for sidebar", error);
+      });
   }, []);
 
   const fallbackUserData = {

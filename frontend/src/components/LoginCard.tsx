@@ -43,7 +43,8 @@ export default function LoginCard() {
         if (res.ok) {
           router.replace("/dashboard");
         }
-      } catch (e) {
+      } catch (error) {
+        console.error("Failed to check authentication status", error);
       }
     })();
   }, [router]);
