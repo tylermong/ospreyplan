@@ -195,7 +195,7 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
     setSelectedKey(key);
   }, []);
 
-  const MAX_SHOWN = 250;
+  const MAX_SHOWN = 50;
   const shownCourses = React.useMemo(() => {
     return filteredCourses.slice(0, MAX_SHOWN);
   }, [filteredCourses]);
