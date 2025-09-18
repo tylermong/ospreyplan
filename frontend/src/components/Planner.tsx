@@ -300,7 +300,7 @@ export default function Planner() {
     const { semesterId, courseName, credits } = pendingCourse;
 
   // reuse addCourse which will perform backend call if userId present
-  addCourse(String(semesterId), courseName, credits);
+  addCourse(semesterId, courseName, credits);
 
     setShowCreditWarning(false);
     setPendingCourse(null);
