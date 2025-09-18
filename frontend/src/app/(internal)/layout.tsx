@@ -1,5 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { Toaster } from "sonner";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,6 +10,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <SidebarTrigger className="mt-2 ml-2" />
         {children}
       </main>
+      <Toaster />
     </SidebarProvider>
   );
 }
