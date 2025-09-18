@@ -42,7 +42,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           email: u.user_metadata.email,
           avatar: u.user_metadata.avatar_url,
         });
-        console.log(u.user_metadata.avatar_url);
       })
       .catch(() => {});
   }, []);
