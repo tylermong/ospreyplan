@@ -38,48 +38,14 @@ export default function Planner() {
   ).reverse();
 
   function addSemester() {
-    // create via backend if userId available, otherwise local
     const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
     if (!userId) {
-      // fallback to local behavior
-      setSemesters((prev) => {
-        const currentYear = new Date().getFullYear();
-        const last = prev[prev.length - 1];
-        let term = "Fall";
-        let year = currentYear;
-        if (last) {
-          const lastTerm = last.term;
-          const lastYear = last.year ?? currentYear;
-          if (lastTerm === "Summer") {
-            term = "Fall";
-            year = lastYear;
-          } else if (lastTerm === "Fall") {
-            term = "Spring";
-            year = lastYear + 1;
-          } else if (lastTerm === "Winter") {
-            term = "Spring";
-            year = lastYear;
-          } else if (lastTerm === "Spring") {
-            term = "Fall";
-            year = lastYear;
-          }
-        }
-        return [
-          ...prev,
-          {
-            id: String(prev.length + 1),
-            term,
-            year,
-            title: `${term} ${year}`,
-            courses: [],
-          },
-        ];
-      });
+      toast.error("You must be signed in to create a semester.");
       return;
     }
 
-    // create a backend semester with title
+    // compute next term/year based on last semester
     const currentYear = new Date().getFullYear();
     const last = semesters[semesters.length - 1];
     let term = "Fall";
@@ -107,15 +73,20 @@ export default function Planner() {
       method: "POST",
       credentials: "include",
     })
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Create semester failed: ${res.status}`);
+        return res.json();
+      })
       .then((data: BackendSemester) => {
         setSemesters((prev) => [
           ...prev,
           { id: data.id, title: data.title, term, year, courses: [] },
         ]);
+        toast.success("Semester created");
       })
       .catch((e) => {
         console.error("Failed to create semester", e);
+        toast.error("Failed to create semester");
       });
   }
 
@@ -139,65 +110,86 @@ export default function Planner() {
       return;
     }
 
-    // If backend userId is present, post to backend to create the course record
     const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
-    if (userId) {
-      const match = courseName.match(/^([A-Z]+)\s+(\d+)\s+([^\s]+)\b/);
-      let subject = "";
-      let courseNumber = 0;
-      let section = "";
-      if (match) {
-        subject = match[1];
-        courseNumber = Number(match[2]);
-        section = match[3];
-      }
 
-      fetch(`${apiBase}/api/semesters/${semesterId}/courses?subject=${encodeURIComponent(subject)}&courseNumber=${courseNumber}&section=${encodeURIComponent(section)}`, {
-        method: "POST",
+    if (!userId) {
+      toast.error("You must be signed in to add a course.");
+      return;
+    }
+
+    // Expect courseName to be in the format 'SUBJ 101 A' (AddCourseDialog provides structured values)
+    const match = courseName.match(/^([A-Z]+)\s+(\d+)\s+([^\s]+)\b/);
+    let subject = "";
+    let courseNumber = 0;
+    let section = "";
+    if (match) {
+      subject = match[1];
+      courseNumber = Number(match[2]);
+      section = match[3];
+    }
+
+    fetch(`${apiBase}/api/semesters/${semesterId}/courses?subject=${encodeURIComponent(subject)}&courseNumber=${courseNumber}&section=${encodeURIComponent(section)}`, {
+      method: "POST",
+      credentials: "include",
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Add course failed: ${res.status}`);
+        return res.json();
+      })
+      .then((createdCourse) => {
+        setSemesters((prev) =>
+          prev.map((s) =>
+            s.id === semesterId
+              ? {
+                  ...s,
+                  courses: [
+                    ...s.courses,
+                    { id: createdCourse.id ?? `${s.courses.length + 1}`, name: courseName, credits },
+                  ],
+                }
+              : s
+          )
+        );
+        toast.success("Course added");
+      })
+      .catch((e) => {
+        console.error("Failed to add course to semester", e);
+        toast.error("Failed to add course");
+      });
+  }
+
+  function removeCourse(semesterId: string, courseId: number | string) {
+    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
+
+    // If authenticated and courseId looks like a backend id (string/uuid) call backend delete
+    if (userId && typeof courseId === "string") {
+      fetch(`${apiBase}/api/semesters/${semesterId}/courses/${encodeURIComponent(String(courseId))}`, {
+        method: "DELETE",
         credentials: "include",
       })
-        .then((res) => res.json())
-        .then((createdCourse) => {
-          setSemesters((prev) =>
-            prev.map((s) =>
-              s.id === semesterId
-                ? {
-                    ...s,
-                    courses: [
-                      ...s.courses,
-                      { id: createdCourse.id ?? `${s.courses.length + 1}`, name: courseName, credits },
-                    ],
-                  }
-                : s
-            )
-          );
+        .then((res) => {
+          if (res.ok) {
+            setSemesters((prev) =>
+              prev.map((semester) =>
+                semester.id === semesterId
+                  ? { ...semester, courses: semester.courses.filter((course) => course.id !== courseId) }
+                  : semester
+              )
+            );
+            toast.success("Course removed");
+          } else {
+            toast.error("Failed to remove course");
+            console.error("Failed to remove course", res.status, res.statusText);
+          }
         })
         .catch((e) => {
-          console.error("Failed to add course to semester", e);
+          toast.error("Failed to remove course");
+          console.error("Failed to remove course", e);
         });
       return;
     }
 
-    setSemesters((prev) =>
-      prev.map((semester) =>
-        semester.id === semesterId
-          ? {
-              ...semester,
-              courses: [
-                ...semester.courses,
-                {
-                  id: semester.courses.length + 1,
-                  name: courseName,
-                  credits: credits,
-                },
-              ],
-            }
-          : semester
-      )
-    );
-  }
-
-  function removeCourse(semesterId: string, courseId: number | string) {
+    // Local-only removal when not authenticated or course is local-only
     setSemesters((prev) =>
       prev.map((semester) =>
         semester.id === semesterId
