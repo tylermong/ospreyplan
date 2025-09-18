@@ -34,4 +34,11 @@ public class PlannedSemesterController
     {
         return service.addCourseToSemester(semesterId, subject, courseNumber, section);
     }
+
+    @DeleteMapping("/{semesterId}/courses/{courseId}")
+    @ResponseStatus(code = org.springframework.http.HttpStatus.NO_CONTENT)
+    public void removeCourseFromSemester(@PathVariable UUID semesterId, @PathVariable UUID courseId)
+    {
+        service.removeCourseFromSemester(semesterId, courseId);
+    }
 }
