@@ -281,7 +281,7 @@ const CourseRow = React.memo(React.forwardRef<HTMLDivElement, {
             ? "bg-primary text-primary-foreground border-primary shadow-sm hover:bg-primary/90"
             : "bg-card hover:bg-accent border-border hover:border-border";
           return cn(
-            "w-full text-left rounded-[var(--radius)] border transition-all",
+            "w-full text-left rounded-[var(--radius)] border transform transition duration-300 ease-in-out will-change-transform",
             visual
           );
         })()}
