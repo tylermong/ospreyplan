@@ -26,6 +26,8 @@ public class PlannedCourse
 
     private String section;
 
+    private Integer credits;
+
     public UUID getId()
     {
         return id;
@@ -74,5 +76,15 @@ public class PlannedCourse
     public void setSection(String section)
     {
         this.section = section;
+    }
+
+    public Integer getCredits()
+    {
+        return credits;
+    }
+
+    public void setCredits(Integer credits)
+    {
+        this.credits = credits;
     }
 }

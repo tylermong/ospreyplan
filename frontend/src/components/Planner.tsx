@@ -17,7 +17,7 @@ type BackendSemester = {
   id: string;
   title: string;
   userId: string;
-  plannedCourses: Array<{ id: string; subject: string; courseNumber: number; section: string }>;
+  plannedCourses: Array<{ id: string; subject: string; courseNumber: number; section: string; credits: number }>;
 };
 
 export default function Planner() {
@@ -128,7 +128,7 @@ export default function Planner() {
       section = match[3];
     }
 
-    fetch(`${apiBase}/api/semesters/${semesterId}/courses?subject=${encodeURIComponent(subject)}&courseNumber=${courseNumber}&section=${encodeURIComponent(section)}`, {
+    fetch(`${apiBase}/api/semesters/${semesterId}/courses?subject=${encodeURIComponent(subject)}&courseNumber=${courseNumber}&section=${encodeURIComponent(section)}&credits=${encodeURIComponent(String(credits))}`, {
       method: "POST",
       credentials: "include",
     })
@@ -226,7 +226,7 @@ export default function Planner() {
                 title: s.title,
                 term: s.title.split(" ")[0] ?? "Fall",
                 year: Number(s.title.split(" ")[1]) || new Date().getFullYear(),
-                courses: (s.plannedCourses || []).map((c) => ({ id: c.id, name: `${c.subject} ${c.courseNumber} ${c.section}`, credits: 0 })),
+                courses: (s.plannedCourses || []).map((c) => ({ id: c.id, name: `${c.subject} ${c.courseNumber} ${c.section}`, credits: c.credits })),
               }));
               setSemesters(mapped);
             })

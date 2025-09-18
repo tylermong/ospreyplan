@@ -38,7 +38,7 @@ public class PlannedSemesterService
     }
 
     @Transactional
-    public PlannedCourse addCourseToSemester(UUID semesterId, String subject, Integer courseNumber, String section)
+    public PlannedCourse addCourseToSemester(UUID semesterId, String subject, Integer courseNumber, String section, Integer credits)
     {
         PlannedSemester semester = semesterRepository.findById(semesterId)
                 .orElseThrow(() -> new IllegalArgumentException("Semester not found"));
@@ -48,6 +48,7 @@ public class PlannedSemesterService
         course.setSubject(subject);
         course.setCourseNumber(courseNumber);
         course.setSection(section);
+        course.setCredits(credits);
 
         semester.getPlannedCourses().add(course);
 
