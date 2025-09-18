@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,6 +32,22 @@ async function generatePKCE() {
 }
 
 export default function LoginCard() {
+  const router = useRouter();
+
+  React.useEffect(() => {
+    // Check whether the user is already authenticated. If so, redirect to dashboard.
+    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
+    void (async () => {
+      try {
+        const res = await fetch(`${apiBase}/auth/me`, { method: "GET", credentials: "include" });
+        if (res.ok) {
+          router.replace("/dashboard");
+        }
+      } catch (e) {
+      }
+    })();
+  }, [router]);
+
   const handleLogin = async () => {
     const { code_verifier, code_challenge } = await generatePKCE();
     sessionStorage.setItem("pkce_code_verifier", code_verifier);
