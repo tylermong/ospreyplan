@@ -23,7 +23,7 @@ interface Course {
 }
 
 interface AddCourseDialogProps {
-  readonly onAddCourse: (courseName: string, credits: number) => void;
+  readonly onAddCourse: (subject: string, courseNumber: number, section: string, credits: number) => void;
 }
 
 let coursesCache: Course[] | null = null;
@@ -46,10 +46,7 @@ async function fetchCoursesOnce(): Promise<Course[]> {
   if (coursesPromise) return coursesPromise;
 
   coursesPromise = (async () => {
-    const apiBaseUrl =
-      process.env.NODE_ENV === "production"
-        ? "https://ospreyplan.app"
-        : "http://localhost:8080";
+    const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? (process.env.NODE_ENV === "production" ? "https://ospreyplan.app" : "http://localhost:8080");
 
     const res = await fetch(`${apiBaseUrl}/api/courses`, {
       method: "GET",
@@ -178,11 +175,10 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
 
   const handleAddCourse = React.useCallback(() => {
     if (!selectedCourse) return;
-    const courseName = formatCourseName(selectedCourse);
-    onAddCourse(courseName, selectedCourse.credits);
+    onAddCourse(selectedCourse.subject, Number(selectedCourse.number), selectedCourse.section, selectedCourse.credits);
     setSelectedKey(null);
     setOpen(false);
-  }, [onAddCourse, selectedCourse, formatCourseName]);
+  }, [onAddCourse, selectedCourse]);
 
   const handleCancel = React.useCallback(() => {
     setSelectedKey(null);
