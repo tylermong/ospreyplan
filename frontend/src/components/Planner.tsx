@@ -268,6 +268,32 @@ export default function Planner() {
     setDraftYear(new Date().getFullYear());
   }
 
+  function deleteSemester(semesterId: string) {
+    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
+    if (!userId) {
+      toast.error("You must be signed in to delete a semester.");
+      return;
+    }
+
+    fetch(`${apiBase}/api/semesters/${encodeURIComponent(semesterId)}`, {
+      method: "DELETE",
+      credentials: "include",
+    })
+      .then((res) => {
+        if (res.ok) {
+          setSemesters((prev) => prev.filter((s) => s.id !== semesterId));
+          toast.success("Semester deleted");
+        } else {
+          toast.error("Failed to delete semester");
+          console.error("Failed to delete semester", res.status, res.statusText);
+        }
+      })
+      .catch((e) => {
+        toast.error("Failed to delete semester");
+        console.error("Failed to delete semester", e);
+      });
+  }
+
   function confirmAddCourse() {
     if (!pendingCourse) return;
 
@@ -333,22 +359,28 @@ export default function Planner() {
                     semester.title
                   )}
                 </CardTitle>
-                <CardAction className="row-span-1 self-center">
+                <CardAction className="row-span-1 self-center flex items-center gap-2">
                   {isEditing ? (
                     <div className="flex items-center gap-2">
                       <Button size="sm" variant="outline" onClick={commitRenameSemester}>Save</Button>
                       <Button size="sm" variant="ghost" onClick={cancelRenameSemester}>Cancel</Button>
                     </div>
                   ) : (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => startRenamingSemester(semester)}
-                      aria-label="Rename semester"
-                      title="Rename"
-                    >
-                      <Pencil />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => startRenamingSemester(semester)}
+                        aria-label="Rename semester"
+                        title="Rename"
+                      >
+                        <Pencil />
+                      </Button>
+
+                      <Button size="icon" variant="ghost" onClick={() => deleteSemester(semester.id)} title="Delete semester" aria-label="Delete semester">
+                        <X size={16} />
+                      </Button>
+                    </div>
                   )}
                 </CardAction>
               </CardHeader>

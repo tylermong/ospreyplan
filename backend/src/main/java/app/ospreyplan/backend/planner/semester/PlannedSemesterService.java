@@ -59,7 +59,7 @@ public class PlannedSemesterService
     {
         PlannedSemester semester = semesterRepository.findById(semesterId)
                 .orElseThrow(() -> new IllegalArgumentException("Semester not found: " + semesterId));
-        
+
         List<PlannedCourse> courses = semester.getPlannedCourses();
         boolean removed = courses.removeIf(course -> course.getId().equals(courseId));
 
@@ -69,5 +69,15 @@ public class PlannedSemesterService
         }
 
         semesterRepository.save(semester);
+    }
+
+    @Transactional
+    public void deleteSemester(UUID semesterId)
+    {
+        if (!semesterRepository.existsById(semesterId))
+        {
+            throw new IllegalArgumentException("Semester not found: " + semesterId);
+        }
+        semesterRepository.deleteById(semesterId);
     }
 }
