@@ -514,7 +514,7 @@ export default function Planner() {
                     return <div key={course.id}>{content}</div>;
                   }
                   return (
-                    <HoverCard key={course.id} openDelay={0} closeDelay={0}>
+                    <HoverCard key={course.id} openDelay={50} closeDelay={50}>
                       <HoverCardTrigger asChild>
                         {content}
                       </HoverCardTrigger>
