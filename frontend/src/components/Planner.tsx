@@ -390,6 +390,20 @@ export default function Planner() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-4 text-sm">
+        <div className="flex items-center gap-2">
+          <span className="h-3 w-6 rounded bg-amber-400 inline-block" aria-hidden />
+          <span>Prerequisite</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="h-3 w-6 rounded bg-emerald-400 inline-block" aria-hidden />
+          <span>Postrequisite</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="h-3 w-6 rounded bg-red-500 inline-block" aria-hidden />
+          <span>Missing prerequisites</span>
+        </div>
+      </div>
       <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
         {semesters.map((semester) => {
           const isEditing = editingSemesterId === semester.id;
@@ -474,7 +488,7 @@ export default function Planner() {
                   const unmet = course.unmetPrereqs && course.unmetPrereqs.length > 0;
                   const classes = ["rounded-md border px-3 py-2 text-sm flex items-center justify-between transition-colors"];
                   if (unmet) classes.push("border-red-500 bg-red-50 dark:bg-red-950/30");
-                  if (isHovered) classes.push("ring-2 ring-blue-500");
+                  if (isHovered) classes.push("ring-2 ring-ring border-ring");
                   else if (isPrereq) classes.push("bg-amber-50 dark:bg-amber-900/30 border-amber-400");
                   else if (isPrereqOfHover) classes.push("bg-emerald-50 dark:bg-emerald-900/30 border-emerald-400");
                   const content = (
@@ -500,7 +514,7 @@ export default function Planner() {
                     return <div key={course.id}>{content}</div>;
                   }
                   return (
-                    <HoverCard key={course.id}>
+                    <HoverCard key={course.id} openDelay={0} closeDelay={0}>
                       <HoverCardTrigger asChild>
                         {content}
                       </HoverCardTrigger>
