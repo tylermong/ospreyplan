@@ -33,7 +33,7 @@ export function canonicalCourse(code: string): string {
 
 export function extractCanonicalFromPlannerName(name: string): string {
   // Planner stores like: "ACCT 2120 001"; we only care subject+number
-  const match = name.match(/^([A-Za-z]+)\s+(\d{3,4})/);
+  const match = name.match(/^([A-Za-z]+)\s+(\d{4})/);
   if (!match) return canonicalCourse(name);
   return `${match[1].toUpperCase()} ${match[2]}`;
 }
