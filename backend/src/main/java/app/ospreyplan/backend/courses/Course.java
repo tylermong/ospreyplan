@@ -27,6 +27,9 @@ public class Course
     @Column(name = "term")
     private Integer term;
 
+    @Column(name = "prerequisite")
+    private String prerequisite;
+
     public CourseId getCourseId()
     {
         return courseId;
@@ -95,5 +98,13 @@ public class Course
     public void setTerm(Integer term)
     {
         this.term = term;
+    }
+
+    public String getPrerequisite() {
+        return prerequisite;
+    }
+
+    public void setPrerequisite(String prerequisite) {
+        this.prerequisite = prerequisite;
     }
 }

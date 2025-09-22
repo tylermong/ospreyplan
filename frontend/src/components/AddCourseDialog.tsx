@@ -20,10 +20,11 @@ interface Course {
   filled: number;
   remaining: number;
   term: number;
+  prerequisite?: string | null;
 }
 
 interface AddCourseDialogProps {
-  readonly onAddCourse: (subject: string, courseNumber: number, section: string, credits: number) => void;
+  readonly onAddCourse: (subject: string, courseNumber: number, section: string, credits: number, prerequisiteRaw: string | null | undefined) => void;
 }
 
 let coursesCache: Course[] | null = null;
@@ -58,6 +59,7 @@ async function fetchCoursesOnce(): Promise<Course[]> {
       courseId: { subject: string; courseNumber: number; section: string };
       credits?: number;
       name?: string;
+      prerequisite?: string | null;
       [k: string]: unknown;
     };
 
@@ -75,6 +77,7 @@ async function fetchCoursesOnce(): Promise<Course[]> {
         filled: Number((extra["filled"] as number) ?? 0),
         remaining: Number((extra["remaining"] as number) ?? 0),
         term: Number((extra["term"] as number) ?? 0),
+        prerequisite: (extra["prerequisite"] as string | null | undefined) ?? null,
       };
       return course;
     });
@@ -175,7 +178,13 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
 
   const handleAddCourse = React.useCallback(() => {
     if (!selectedCourse) return;
-    onAddCourse(selectedCourse.subject, Number(selectedCourse.number), selectedCourse.section, selectedCourse.credits);
+    onAddCourse(
+      selectedCourse.subject,
+      Number(selectedCourse.number),
+      selectedCourse.section,
+      selectedCourse.credits,
+      selectedCourse.original.prerequisite ?? null
+    );
     setSelectedKey(null);
     setOpen(false);
   }, [onAddCourse, selectedCourse]);
