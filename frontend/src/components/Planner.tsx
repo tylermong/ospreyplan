@@ -522,7 +522,7 @@ export default function Planner() {
                         <div className="space-y-2">
                           <p className="font-semibold text-sm">Missing prerequisites</p>
                           <ul className="list-disc pl-4 text-xs space-y-1">
-                            {course.unmetPrereqs!.map((g,i) => (
+                            {course.unmetPrereqs?.map((g,i) => (
                               <li key={i}>{g}</li>
                             ))}
                           </ul>
