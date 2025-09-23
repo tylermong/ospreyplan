@@ -92,7 +92,7 @@ export default function Settings() {
         setError(body.error || "Failed to save settings");
       }
     }
-    catch (error) {
+    catch (_error) {
       setError("Error saving settings");
     }
   }
