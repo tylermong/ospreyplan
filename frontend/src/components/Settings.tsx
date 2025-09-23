@@ -47,7 +47,7 @@ export default function Settings() {
           if (body && body.error) setError(body.error);
         }
       }
-      catch (e) {
+      catch (_error: unknown) {
         setError("Failed to load settings");
       }
     }
