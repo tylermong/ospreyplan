@@ -15,11 +15,20 @@ import { toast } from "sonner";
 type Course = { id: number | string; name: string; credits: number; prerequisite?: string | null; unmetPrereqs?: string[] };
 type Semester = { id: string; title: string; term: string; year: number; courses: Course[] };
 
+type BackendPlannedCourse = {
+  id: string;
+  subject: string;
+  courseNumber: number;
+  section: string;
+  credits: number;
+  prerequisite?: string | null;
+};
+
 type BackendSemester = {
   id: string;
   title: string;
   userId: string;
-  plannedCourses: Array<{ id: string; subject: string; courseNumber: number; section: string; credits: number }>;
+  plannedCourses: BackendPlannedCourse[];
 };
 
 export default function Planner() {
@@ -139,17 +148,17 @@ export default function Planner() {
         if (!res.ok) throw new Error(`Add course failed: ${res.status}`);
         return res.json();
       })
-      .then((createdCourse) => {
+          .then((createdCourse: BackendPlannedCourse) => {
         let unmetForNew: string[] | undefined;
         setSemesters((prev) => {
           const updated = prev.map((s) =>
             s.id === semesterId
               ? {
                   ...s,
-                  courses: [
-                    ...s.courses,
-                    { id: createdCourse.id ?? `${s.courses.length + 1}`, name: courseName, credits, prerequisite: (createdCourse as any).prerequisite ?? prerequisiteRaw ?? null },
-                  ],
+                      courses: [
+                        ...s.courses,
+                        { id: createdCourse.id ?? `${s.courses.length + 1}`, name: courseName, credits, prerequisite: createdCourse.prerequisite ?? prerequisiteRaw ?? null },
+                      ],
                 }
               : s
           );
@@ -243,7 +252,7 @@ export default function Planner() {
                 title: s.title,
                 term: s.title.split(" ")[0] ?? "Fall",
                 year: Number(s.title.split(" ")[1]) || new Date().getFullYear(),
-                courses: (s.plannedCourses || []).map((c) => ({ id: c.id, name: `${c.subject} ${c.courseNumber} ${c.section}`, credits: c.credits, prerequisite: (c as any).prerequisite ?? null })),
+                  courses: (s.plannedCourses || []).map((c) => ({ id: c.id, name: `${c.subject} ${c.courseNumber} ${c.section}`, credits: c.credits, prerequisite: c.prerequisite ?? null })),
               }));
               setSemesters(recomputePrereqStatuses(mapped));
             })
@@ -301,7 +310,7 @@ export default function Planner() {
   // Hover derived sets
   const hoverSets = useMemo(() => {
     if (!hoveredCourseId) return { prereq: new Set<string>(), postreq: new Set<string>() };
-    const allCourses: { id: string | number; canonical: string; raw: any; semIndex: number }[] = [];
+    const allCourses: { id: string | number; canonical: string; raw: Course; semIndex: number }[] = [];
     semesters.forEach((sem, idx) => sem.courses.forEach(c => allCourses.push({ id: c.id, canonical: extractCanonicalFromPlannerName(c.name), raw: c, semIndex: idx })));
     const target = allCourses.find(c => c.id === hoveredCourseId);
     if (!target) return { prereq: new Set<string>(), postreq: new Set<string>() };
