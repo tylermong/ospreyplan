@@ -47,7 +47,7 @@ export default function Settings() {
           if (body && body.error) setError(body.error);
         }
       }
-      catch (_error: unknown) {
+      catch {
         setError("Failed to load settings");
       }
     }
@@ -92,7 +92,7 @@ export default function Settings() {
         setError(body.error || "Failed to save settings");
       }
     }
-    catch (_error) {
+    catch {
       setError("Error saving settings");
     }
   }
