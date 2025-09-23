@@ -6,6 +6,7 @@ import { CalendarDays, Monitor, Settings } from "lucide-react";
 import { NavItems } from "@/components/nav-items";
 import { NavUser } from "@/components/nav-user";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail, } from "@/components/ui/sidebar";
+import Image from "next/image";
 
 const items = [
   {
@@ -64,17 +65,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Link href="/dashboard" className="flex items-center gap-2">
-                <img
+                <Link href="/dashboard" className="flex items-center gap-2">
+                <Image
                   src="/ospreyplan-black-transparent.png"
                   alt="OspreyPlan"
                   width={32}
                   height={32}
+                  priority
                 />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-bold text-xl">OspreyPlan</span>
                 </div>
-              </Link>
+                </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
