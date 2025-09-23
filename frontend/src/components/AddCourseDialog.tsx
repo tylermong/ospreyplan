@@ -172,10 +172,6 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
     return allFlattened.find((c) => c.key === selectedKey) ?? null;
   }, [selectedKey, allFlattened]);
 
-  const formatCourseName = React.useCallback((c: FlattenedCourse) => {
-    return `${c.subject} ${c.number} ${c.section} - ${c.name}`;
-  }, []);
-
   const handleAddCourse = React.useCallback(() => {
     if (!selectedCourse) return;
     onAddCourse(
