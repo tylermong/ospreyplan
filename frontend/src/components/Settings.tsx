@@ -21,9 +21,7 @@ export default function Settings() {
 
     async function load() {
       const apiBaseUrl =
-        process.env.NODE_ENV === "production"
-          ? "https://ospreyplan.app"
-          : "http://localhost:8080";
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
       try {
         const res = await fetch(`${apiBaseUrl}/api/settings`, {
@@ -75,9 +73,7 @@ export default function Settings() {
         : startYear;
 
     const apiBaseUrl =
-      process.env.NODE_ENV === "production"
-        ? "https://ospreyplan.app"
-        : "http://localhost:8080";
+      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
     try {
       const response = await fetch(`${apiBaseUrl}/api/settings`, {
