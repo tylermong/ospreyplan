@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
  * - `supabase.anon-key` or `supabase.service-role-key` – API key for Supabase
  * - `frontend.base-url` – base URL of the frontend app
  * - `backend.base-url` – base URL of this backend (used for redirect URI and cookie security)
+ * - `auth.cookie-domain` – domain for auth cookies (set to allow sharing between subdomains)
+ * - `auth.allowed-domains` – allowed email domains for authentication
  */
 @RestController
 @RequestMapping("/auth")
@@ -63,6 +65,10 @@ public class AuthController
     // Backend base URL used when constructing redirect_uri and deciding cookie security
     @Value("${backend.base-url}")
     private String backendBaseUrl;
+
+    // Cookie domain for auth tokens
+    @Value("${auth.cookie-domain}")
+    private String cookieDomain;
 
     // Allowed domain for OAuth login
     @Value("${auth.allowed-domains}")
@@ -222,12 +228,14 @@ public class AuthController
             boolean secureCookie = backendBaseUrl != null && backendBaseUrl.startsWith("https://");
 
             // Access token cookie is httpOnly and has a max-age matching expiry
+            // Set domain to allow sharing between subdomains
             ResponseCookie accessCookie = ResponseCookie.from(ACCESS_COOKIE_NAME, accessToken).httpOnly(true)
-                    .secure(secureCookie).sameSite("Lax").path("/").maxAge(expiresInSeconds).build();
+                    .secure(secureCookie).sameSite("Lax").path("/").maxAge(expiresInSeconds).domain(cookieDomain).build();
 
             // Refresh token cookie is httpOnly; omit maxAge to allow session-based handling by defaults
+            // Set domain to allow sharing between subdomains
             ResponseCookie refreshCookie = ResponseCookie.from(REFRESH_COOKIE_NAME, refreshToken).httpOnly(true)
-                    .secure(secureCookie).sameSite("Lax").path("/").build();
+                    .secure(secureCookie).sameSite("Lax").path("/").domain(cookieDomain).build();
 
             HttpHeaders setCookieHeaders = new HttpHeaders();
             setCookieHeaders.add(HttpHeaders.SET_COOKIE, accessCookie.toString());
@@ -267,6 +275,7 @@ public class AuthController
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(0)
+                .domain(cookieDomain)
                 .build();
 
         ResponseCookie clearRefresh = ResponseCookie.from(REFRESH_COOKIE_NAME, "")
@@ -275,6 +284,7 @@ public class AuthController
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(0)
+                .domain(cookieDomain)
                 .build();
 
         HttpHeaders headers = new HttpHeaders();
