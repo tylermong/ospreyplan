@@ -94,10 +94,10 @@ export default function Settings() {
   }
 
   return (
-    <div className="w-1/4">
+    <div className="max-w-2xl">
       <Card>
         <CardContent>
-          <form className="grid gap-6 grid-cols-1">
+          <form className="grid gap-6 grid-cols-1 md:grid-cols-2">
             <div className="flex flex-col gap-2">
               <label className="text-md font-bold">Degree</label>
               <span className="text-xs text-muted-foreground">
