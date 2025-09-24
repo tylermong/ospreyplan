@@ -20,11 +20,34 @@ public class CorsConfig
             @Override
             public void addCorsMappings(CorsRegistry registry)
             {
+                // Generate both www and non-www variants of the frontend URL
+                String[] allowedOrigins = generateAllowedOrigins(frontendBaseUrl);
+
                 registry.addMapping("/**")
-                        .allowedOrigins(frontendBaseUrl)
+                        .allowedOrigins(allowedOrigins)
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowCredentials(true);
             }
         };
+    }
+
+    /**
+     * Generates allowed origins by creating both www and non-www variants of the given URL Assumes URL is in format
+     * "https://domain.com" (non-www)
+     * 
+     * @param  baseUrl the base frontend URL
+     * @return         array containing both non-www and www variants
+     */
+    private String[] generateAllowedOrigins(String baseUrl)
+    {
+        int protocolIndex = baseUrl.indexOf("://");
+        String protocol = baseUrl.substring(0, protocolIndex + 3);
+        String domain = baseUrl.substring(protocolIndex + 3);
+
+        // Generate both variants
+        String nonWwwVariant = baseUrl;
+        String wwwVariant = protocol + "www." + domain;
+
+        return new String[]{ nonWwwVariant, wwwVariant };
     }
 }
