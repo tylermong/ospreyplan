@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 
 type Course = { id: number | string; name: string; credits: number; prerequisite?: string | null; unmetPrereqs?: string[] };
-type Semester = { id: string; title: string; term: string; year: number; courses: Course[] };
+type Semester = { id: string; title: string; term: string; year: number; courses: Course[]; createdAt?: string | number };
 
 type BackendPlannedCourse = {
   id: string;
@@ -237,8 +237,10 @@ export default function Planner() {
     const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
     fetch(`${apiBase}/auth/me`, { method: "GET", credentials: "include" })
       .then(async (res) => {
+        let parsed = null;
+  try { parsed = await res.json(); } catch { }
         if (!res.ok) throw new Error("not authenticated");
-        return res.json();
+        return parsed;
       })
       .then((user) => {
         if (user && user.id) {
@@ -246,22 +248,112 @@ export default function Planner() {
           // fetch semesters
           fetch(`${apiBase}/api/semesters/user/${user.id}`, { method: "GET", credentials: "include" })
             .then((r) => r.json())
-            .then((data: BackendSemester[]) => {
+            .then(async (data: BackendSemester[]) => {
               const mapped: Semester[] = (data || []).map((s) => ({
                 id: s.id,
                 title: s.title,
                 term: s.title.split(" ")[0] ?? "Fall",
                 year: Number(s.title.split(" ")[1]) || new Date().getFullYear(),
-                  courses: (s.plannedCourses || []).map((c) => ({ id: c.id, name: `${c.subject} ${c.courseNumber} ${c.section}`, credits: c.credits, prerequisite: c.prerequisite ?? null })),
+                  // createdAt may be string or number depending on backend shape
+                  createdAt: (s as unknown as { createdAt?: string | number }).createdAt ?? undefined,
+                  courses: (s.plannedCourses || []).map((c) => ({
+                    id: c.id,
+                    name: `${c.subject} ${c.courseNumber} ${c.section}`,
+                    credits: c.credits,
+                    prerequisite: c.prerequisite === undefined || c.prerequisite === null ? null : (typeof c.prerequisite === 'string' ? c.prerequisite : JSON.stringify(c.prerequisite)),
+                  })),
               }));
-              setSemesters(recomputePrereqStatuses(mapped));
+
+              // Augment mapped semesters by fetching missing prerequisites from the course catalog.
+              // Collect unique canonical course keys for which prerequisite is null.
+              const missingKeys = new Map<string, { subject: string; courseNumber: number }>();
+              for (const sem of mapped) {
+                for (const pc of sem.courses) {
+                  if (!pc.prerequisite) {
+                    const match = pc.name.match(/^([A-Za-z]+)\s+(\d{3,4})/);
+                    if (match) {
+                      const subj = match[1].toUpperCase();
+                      const num = Number(match[2]);
+                      const key = `${subj} ${num}`;
+                      if (!missingKeys.has(key)) missingKeys.set(key, { subject: subj, courseNumber: num });
+                    }
+                  }
+                }
+              }
+
+              if (missingKeys.size > 0) {
+                try {
+                  // Fetch the full catalog once and index it. This avoids requesting the full catalog multiple times.
+                  const catalogResp = await fetch(`${apiBase}/api/courses`, { credentials: 'include' }).catch(() => null);
+                  const catalog = catalogResp && catalogResp.ok ? await catalogResp.json().catch(() => null) : null;
+
+                  type CatalogItem = { courseId?: { subject?: string; courseNumber?: number }; subject?: string; courseNumber?: number; name?: string; prerequisite?: string | null };
+                  const catalogIndex = new Map<string, CatalogItem>();
+                  if (Array.isArray(catalog)) {
+                    for (const rawItem of catalog) {
+                      const item = rawItem as CatalogItem;
+                      // try to extract subject and courseNumber from different shapes
+                      let subj: string | null = null;
+                      let num: number | null = null;
+                      if (item.courseId && (item.courseId.subject || item.courseId.courseNumber !== undefined)) {
+                        subj = String(item.courseId.subject).toUpperCase();
+                        num = Number(item.courseId.courseNumber);
+                      } else if (item.subject || item.courseNumber !== undefined) {
+                        subj = String(item.subject).toUpperCase();
+                        num = Number(item.courseNumber);
+                      } else if (typeof item.name === 'string') {
+                        const m = item.name.match(/^([A-Za-z]+)\s+(\d{3,4})/);
+                        if (m) { subj = m[1].toUpperCase(); num = Number(m[2]); }
+                      }
+                      if (subj && num !== null && !Number.isNaN(num)) {
+                        catalogIndex.set(`${subj} ${num}`, item);
+                      }
+                    }
+                  }
+
+                  const prereqByKey = new Map<string, string | null>();
+                  for (const key of missingKeys.keys()) {
+                    const found = catalogIndex.get(key);
+                    if (found) {
+                      const val = found.prerequisite === null || found.prerequisite === undefined ? null : (typeof found.prerequisite === 'string' ? found.prerequisite : JSON.stringify(found.prerequisite));
+                      prereqByKey.set(key, val);
+                    } else {
+                      prereqByKey.set(key, null);
+                    }
+                  }
+
+                  // Merge prerequisites back into mapped semesters
+                  const merged = mapped.map(sem => ({
+                    ...sem,
+                    courses: sem.courses.map(c => {
+                      if (c.prerequisite) return c;
+                      const m = c.name.match(/^([A-Za-z]+)\s+(\d{3,4})/);
+                      if (!m) return c;
+                      const key = `${m[1].toUpperCase()} ${Number(m[2])}`;
+                      const prereq = prereqByKey.has(key) ? prereqByKey.get(key) ?? null : null;
+                      
+                      return { ...c, prerequisite: prereq };
+                    })
+                  }));
+
+                  setSemesters(recomputePrereqStatuses(merged));
+                } catch {
+                  console.warn('Failed to fetch course prerequisites');
+                  setSemesters(recomputePrereqStatuses(mapped));
+                }
+              } else {
+                setSemesters(recomputePrereqStatuses(mapped));
+              }
             })
-            .catch((e) => console.error("failed to load semesters", e));
+            .catch(() => console.error("failed to load semesters"));
         }
       })
       .catch(() => {
         // not signed in or failed - keep local state
       });
+  
+  // NOTE: if auth fails and produces an error, log it so debugging can continue.
+  // (we intentionally don't expose stack traces to users; this is developer-only console logging)
   }, []);
 
   function startRenamingSemester(semester: Semester) {
@@ -274,13 +366,14 @@ export default function Planner() {
   // Only courses placed in earlier semesters satisfy prerequisites.
   // Same-semester or later-semester courses do not count, even if present.
   function recomputePrereqStatuses(current: Semester[]): Semester[] {
-    const termRank: Record<string, number> = { "Summer": 0, "Fall": 1, "Winter": 2, "Spring": 3 };
-    const sorted = [...current].sort((a,b) => {
-      const aAdjusted = (a.term === "Winter" || a.term === "Spring") ? a.year - 1 : a.year;
-      const bAdjusted = (b.term === "Winter" || b.term === "Spring") ? b.year - 1 : b.year;
-      if (aAdjusted !== bAdjusted) return aAdjusted - bAdjusted;
-      // same adjusted academic cycle; order by rank
-      return termRank[a.term] - termRank[b.term];
+    const sorted = [...current].slice().sort((a: Semester, b: Semester) => {
+      const aTs = a.createdAt ? Date.parse(String(a.createdAt)) : undefined;
+      const bTs = b.createdAt ? Date.parse(String(b.createdAt)) : undefined;
+      if (aTs !== undefined && !Number.isNaN(aTs) && bTs !== undefined && !Number.isNaN(bTs)) return aTs - bTs;
+      if (aTs !== undefined && !Number.isNaN(aTs) && (bTs === undefined || Number.isNaN(bTs))) return -1;
+      if ((aTs === undefined || Number.isNaN(aTs)) && bTs !== undefined && !Number.isNaN(bTs)) return 1;
+      // fallback: preserve original array order
+      return 0;
     });
     const takenBeforePerSemester: Map<string, Set<string>> = new Map();
     const cumulative = new Set<string>();
@@ -289,6 +382,7 @@ export default function Planner() {
       takenBeforePerSemester.set(sem.id, new Set(cumulative));
       // then add this semester's courses to cumulative AFTER snapshot
       for (const c of sem.courses) {
+        // normalize planner names to canonical form so they match codes from prerequisites
         cumulative.add(extractCanonicalFromPlannerName(c.name));
       }
     }
