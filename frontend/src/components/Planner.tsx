@@ -426,21 +426,42 @@ export default function Planner() {
   }, [hoveredCourseId, semesters]);
 
   function commitRenameSemester() {
-    if (editingSemesterId === null) return;
+    if (!editingSemesterId) return;
 
-    const nextTerm = draftTerm || "Fall";
-    const nextYear = draftYear || new Date().getFullYear();
+    const nextTerm = draftTerm;
+    const nextYear = draftYear;
     const nextTitle = `${nextTerm} ${nextYear}`;
-    setSemesters((prev) =>
-      prev.map((semester) =>
-        semester.id === editingSemesterId
-          ? { ...semester, term: nextTerm, year: nextYear, title: nextTitle }
-          : semester
-      )
-    );
-    setEditingSemesterId(null);
-    setDraftTerm("Fall");
-    setDraftYear(new Date().getFullYear());
+    const targetId = editingSemesterId;
+
+    if (!userId) {
+      toast.error("You must be signed in to rename a semester.");
+      return;
+    }
+
+    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
+
+    fetch(`${apiBase}/api/semesters/${encodeURIComponent(targetId)}?title=${encodeURIComponent(nextTitle)}`, {
+      method: "PATCH",
+      credentials: "include",
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Rename semester failed: ${res.status}`);
+        setSemesters((prev) =>
+          prev.map((semester) =>
+            semester.id === targetId
+              ? { ...semester, term: nextTerm, year: nextYear, title: nextTitle }
+              : semester
+          )
+        );
+        setEditingSemesterId(null);
+        setDraftTerm("Fall");
+        setDraftYear(new Date().getFullYear());
+        toast.success("Semester renamed");
+      })
+      .catch((err) => {
+        console.error("Failed to rename semester", err);
+        toast.error("Failed to rename semester");
+      });
   }
 
   function cancelRenameSemester() {
