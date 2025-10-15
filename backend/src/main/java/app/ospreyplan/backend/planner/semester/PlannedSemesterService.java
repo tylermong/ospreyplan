@@ -91,4 +91,14 @@ public class PlannedSemesterService
         }
         semesterRepository.deleteById(semesterId);
     }
+
+    @Transactional
+    public void updateSemesterTitle(UUID semesterId, String title)
+    {
+        PlannedSemester semester = semesterRepository.findById(semesterId)
+                .orElseThrow(() -> new IllegalArgumentException("Semester not found: " + semesterId));
+
+        semester.setTitle(title);
+        semesterRepository.save(semester);
+    }
 }
