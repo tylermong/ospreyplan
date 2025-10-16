@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 
 type Course = { id: number | string; name: string; credits: number; prerequisite?: string | null; unmetPrereqs?: string[] };
-type Semester = { id: string; title: string; term: string; year: number; courses: Course[]; createdAt?: string | number };
+type Semester = { id: string; title: string; term: string; year: number; courses: Course[] };
 
 type BackendPlannedCourse = {
   id: string;
@@ -90,10 +90,10 @@ export default function Planner() {
         return res.json();
       })
       .then((data: BackendSemester) => {
-        setSemesters((prev) => [
+        setSemesters((prev) => sortSemestersByTermAndYear([
           ...prev,
           { id: data.id, title: data.title, term, year, courses: [] },
-        ]);
+        ]));
         toast.success("Semester created");
       })
       .catch((e) => {
@@ -254,8 +254,6 @@ export default function Planner() {
                 title: s.title,
                 term: s.title.split(" ")[0] ?? "Fall",
                 year: Number(s.title.split(" ")[1]) || new Date().getFullYear(),
-                  // createdAt may be string or number depending on backend shape
-                  createdAt: (s as unknown as { createdAt?: string | number }).createdAt ?? undefined,
                   courses: (s.plannedCourses || []).map((c) => ({
                     id: c.id,
                     name: `${c.subject} ${c.courseNumber} ${c.section}`,
@@ -362,19 +360,33 @@ export default function Planner() {
     setDraftYear(semester.year ?? new Date().getFullYear());
   }
 
+  // Helper function to sort semesters by term and year
+  // Order within a year: Winter -> Spring -> Summer -> Fall
+  function sortSemestersByTermAndYear(semesters: Semester[]): Semester[] {
+    const termOrder: Record<string, number> = {
+      "Winter": 0,
+      "Spring": 1,
+      "Summer": 2,
+      "Fall": 3,
+    };
+
+    return [...semesters].sort((a: Semester, b: Semester) => {
+      // First, sort by year
+      if (a.year !== b.year) {
+        return a.year - b.year;
+      }
+      // If years are equal, sort by term order
+      const aTermOrder = termOrder[a.term] ?? 999;
+      const bTermOrder = termOrder[b.term] ?? 999;
+      return aTermOrder - bTermOrder;
+    });
+  }
+
   // Recompute unmetPrereqs for each course using chronological validation.
   // Only courses placed in earlier semesters satisfy prerequisites.
   // Same-semester or later-semester courses do not count, even if present.
   function recomputePrereqStatuses(current: Semester[]): Semester[] {
-    const sorted = [...current].slice().sort((a: Semester, b: Semester) => {
-      const aTs = a.createdAt ? Date.parse(String(a.createdAt)) : undefined;
-      const bTs = b.createdAt ? Date.parse(String(b.createdAt)) : undefined;
-      if (aTs !== undefined && !Number.isNaN(aTs) && bTs !== undefined && !Number.isNaN(bTs)) return aTs - bTs;
-      if (aTs !== undefined && !Number.isNaN(aTs) && (bTs === undefined || Number.isNaN(bTs))) return -1;
-      if ((aTs === undefined || Number.isNaN(aTs)) && bTs !== undefined && !Number.isNaN(bTs)) return 1;
-      // fallback: preserve original array order
-      return 0;
-    });
+    const sorted = sortSemestersByTermAndYear(current);
     const takenBeforePerSemester: Map<string, Set<string>> = new Map();
     const cumulative = new Set<string>();
     for (const sem of sorted) {
@@ -386,8 +398,8 @@ export default function Planner() {
         cumulative.add(extractCanonicalFromPlannerName(c.name));
       }
     }
-    // Now compute unmetPrereqs using snapshot sets
-    return current.map(sem => ({
+    // Now compute unmetPrereqs using snapshot sets and return sorted by term/year
+    return sorted.map(sem => ({
       ...sem,
       courses: sem.courses.map(c => {
         const matrix = parsePrerequisite(c.prerequisite ?? null);
@@ -447,11 +459,11 @@ export default function Planner() {
       .then((res) => {
         if (!res.ok) throw new Error(`Rename semester failed: ${res.status}`);
         setSemesters((prev) =>
-          prev.map((semester) =>
+          sortSemestersByTermAndYear(prev.map((semester) =>
             semester.id === targetId
               ? { ...semester, term: nextTerm, year: nextYear, title: nextTitle }
               : semester
-          )
+          ))
         );
         setEditingSemesterId(null);
         setDraftTerm("Fall");
@@ -483,7 +495,7 @@ export default function Planner() {
     })
       .then((res) => {
         if (res.ok) {
-          setSemesters((prev) => prev.filter((s) => s.id !== semesterId));
+          setSemesters((prev) => sortSemestersByTermAndYear(prev.filter((s) => s.id !== semesterId)));
           toast.success("Semester deleted");
         } else {
           toast.error("Failed to delete semester");
