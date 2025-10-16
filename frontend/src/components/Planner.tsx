@@ -19,6 +19,7 @@ import {
 import { SemesterCard } from "./SemesterCard";
 import { usePlannerApi } from "@/hooks/usePlannerApi";
 import { calculateTotalCredits } from "@/lib/planner-utils";
+import { Course } from "@/types/planner.types";
 
 export default function Planner() {
   const {
@@ -57,7 +58,7 @@ export default function Planner() {
     const allCourses: {
       id: string | number;
       canonical: string;
-      raw: any;
+      raw: Course;
       semIndex: number;
     }[] = [];
     semesters.forEach((sem, idx) =>

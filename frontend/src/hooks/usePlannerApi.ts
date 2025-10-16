@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Semester, BackendSemester } from "@/types/planner.types";
+import { Semester, BackendSemester, BackendPlannedCourse } from "@/types/planner.types";
 import {
   sortSemestersByTermAndYear,
   recomputePrereqStatuses,
@@ -296,7 +296,7 @@ export function usePlannerApi() {
         if (!res.ok) throw new Error(`Add course failed: ${res.status}`);
         return res.json();
       })
-      .then((createdCourse: any) => {
+      .then((createdCourse: BackendPlannedCourse) => {
         let unmetForNew: string[] | undefined;
         setSemesters((prev) => {
           const updated = prev.map((s) =>
