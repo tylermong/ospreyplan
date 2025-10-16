@@ -458,13 +458,14 @@ export default function Planner() {
     })
       .then((res) => {
         if (!res.ok) throw new Error(`Rename semester failed: ${res.status}`);
-        setSemesters((prev) =>
-          sortSemestersByTermAndYear(prev.map((semester) =>
+        setSemesters((prev) => {
+          const updated = prev.map((semester) =>
             semester.id === targetId
               ? { ...semester, term: nextTerm, year: nextYear, title: nextTitle }
               : semester
-          ))
-        );
+          );
+          return recomputePrereqStatuses(updated);
+        });
         setEditingSemesterId(null);
         setDraftTerm("Fall");
         setDraftYear(new Date().getFullYear());
