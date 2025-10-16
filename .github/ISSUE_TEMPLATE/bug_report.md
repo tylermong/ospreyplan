@@ -1,7 +1,7 @@
 ---
 name: Bug report
 about: Bugs found during development
-title: ''
+title: 'bug: ...'
 labels: ''
 assignees: ''
 
