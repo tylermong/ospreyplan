@@ -41,7 +41,8 @@ export function recomputePrereqStatuses(current: Semester[]): Semester[] {
       const unmet = listUnmetGroups(matrix, priorSet);
       return {
         ...c,
-        unmetPrereqs: unmet.length > 0 ? unmet.map((g) => g.join(" OR ")) : undefined,
+        unmetPrereqs:
+          unmet.length > 0 ? unmet.map((g) => g.join(" OR ")) : undefined,
       };
     }),
   }));

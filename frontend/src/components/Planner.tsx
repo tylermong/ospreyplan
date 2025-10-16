@@ -1,20 +1,47 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { parsePrerequisite as parseMatrix, canonicalCourse, extractCanonicalFromPlannerName, } from "@/lib/prerequisites";
+import {
+  parsePrerequisite as parseMatrix,
+  canonicalCourse,
+  extractCanonicalFromPlannerName,
+} from "@/lib/prerequisites";
 import AddBox from "./AddBox";
 import { Button } from "./ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { SemesterCard } from "./SemesterCard";
 import { usePlannerApi } from "@/hooks/usePlannerApi";
 import { calculateTotalCredits } from "@/lib/planner-utils";
 
 export default function Planner() {
-  const { semesters, showCreditWarning, pendingCourse, addSemester, addCourse, removeCourse, renameSemester, deleteSemester, confirmAddCourse, cancelAddCourse, setShowCreditWarning, } = usePlannerApi();
-  const [editingSemesterId, setEditingSemesterId] = useState<string | null>(null);
+  const {
+    semesters,
+    showCreditWarning,
+    pendingCourse,
+    addSemester,
+    addCourse,
+    removeCourse,
+    renameSemester,
+    deleteSemester,
+    confirmAddCourse,
+    cancelAddCourse,
+    setShowCreditWarning,
+  } = usePlannerApi();
+  const [editingSemesterId, setEditingSemesterId] = useState<string | null>(
+    null
+  );
   const [draftTerm, setDraftTerm] = useState<string>("Fall");
   const [draftYear, setDraftYear] = useState<number>(new Date().getFullYear());
-  const [hoveredCourseId, setHoveredCourseId] = useState<string | number | null>(null);
+  const [hoveredCourseId, setHoveredCourseId] = useState<
+    string | number | null
+  >(null);
 
   const TERMS = ["Summer", "Fall", "Winter", "Spring"];
   const YEAR_START = 2018;
@@ -67,7 +94,11 @@ export default function Planner() {
     return { prereq: prereqSet, postreq: postSet };
   }, [hoveredCourseId, semesters]);
 
-  function startRenamingSemester(semesterId: string, term: string, year: number) {
+  function startRenamingSemester(
+    semesterId: string,
+    term: string,
+    year: number
+  ) {
     setEditingSemesterId(semesterId);
     setDraftTerm(term ?? "Fall");
     setDraftYear(year ?? new Date().getFullYear());
@@ -82,7 +113,7 @@ export default function Planner() {
         setDraftTerm("Fall");
         setDraftYear(new Date().getFullYear());
       })
-      .catch(() => { });
+      .catch(() => {});
   }
 
   function cancelRenameSemester() {
@@ -95,15 +126,24 @@ export default function Planner() {
     <div className="space-y-6">
       <div className="flex items-center gap-4 text-sm">
         <div className="flex items-center gap-2">
-          <span className="h-3 w-6 rounded bg-amber-400 inline-block" aria-hidden />
+          <span
+            className="h-3 w-6 rounded bg-amber-400 inline-block"
+            aria-hidden
+          />
           <span>Prerequisite</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="h-3 w-6 rounded bg-emerald-400 inline-block" aria-hidden />
+          <span
+            className="h-3 w-6 rounded bg-emerald-400 inline-block"
+            aria-hidden
+          />
           <span>Postrequisite</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="h-3 w-6 rounded bg-red-500 inline-block" aria-hidden />
+          <span
+            className="h-3 w-6 rounded bg-red-500 inline-block"
+            aria-hidden
+          />
           <span>Missing prerequisites</span>
         </div>
       </div>
@@ -121,15 +161,28 @@ export default function Planner() {
               years={years}
               hoveredCourseId={hoveredCourseId}
               hoverSets={hoverSets}
-              onStartRenaming={() => startRenamingSemester(semester.id, semester.term, semester.year)}
+              onStartRenaming={() =>
+                startRenamingSemester(semester.id, semester.term, semester.year)
+              }
               onCommitRename={commitRenameSemester}
               onCancelRename={cancelRenameSemester}
               onSetDraftTerm={setDraftTerm}
               onSetDraftYear={setDraftYear}
               onDelete={() => deleteSemester(semester.id)}
-              onAddCourse={(subject, courseNumber, section, credits, prerequisiteRaw) => {
+              onAddCourse={(
+                subject,
+                courseNumber,
+                section,
+                credits,
+                prerequisiteRaw
+              ) => {
                 const courseName = `${subject} ${courseNumber} ${section}`;
-                addCourse(semester.id, courseName, credits, prerequisiteRaw ?? null);
+                addCourse(
+                  semester.id,
+                  courseName,
+                  credits,
+                  prerequisiteRaw ?? null
+                );
               }}
               onRemoveCourse={(courseId) => removeCourse(semester.id, courseId)}
               onSetHoveredCourseId={setHoveredCourseId}
@@ -138,7 +191,11 @@ export default function Planner() {
           );
         })}
 
-        <AddBox label="Add semester" onClick={addSemester} className="h-60 col-span-1" />
+        <AddBox
+          label="Add semester"
+          onClick={addSemester}
+          className="h-60 col-span-1"
+        />
 
         <Dialog open={showCreditWarning} onOpenChange={setShowCreditWarning}>
           <DialogContent>
@@ -148,13 +205,24 @@ export default function Planner() {
                 Adding this course will bring your total credits to{" "}
                 {pendingCourse &&
                   (() => {
-                    const semester = semesters.find((s) => s.id === pendingCourse.semesterId);
-                    return semester ? calculateTotalCredits(semester) + pendingCourse.credits : 0;
+                    const semester = semesters.find(
+                      (s) => s.id === pendingCourse.semesterId
+                    );
+                    return semester
+                      ? calculateTotalCredits(semester) + pendingCourse.credits
+                      : 0;
                   })()}{" "}
-                credits, which exceeds Stockton&#39;s 21 credit per semester limit.
-                See the{" "}
-                <a href="https://stockton.edu/academic-advising/academic-information/academic-overload.html" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline" }}>Academic Overload</a>
-                {" "}page for more information.
+                credits, which exceeds Stockton&#39;s 21 credit per semester
+                limit. See the{" "}
+                <a
+                  href="https://stockton.edu/academic-advising/academic-information/academic-overload.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ textDecoration: "underline" }}
+                >
+                  Academic Overload
+                </a>{" "}
+                page for more information.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>

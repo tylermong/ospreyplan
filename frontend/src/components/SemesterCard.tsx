@@ -88,7 +88,10 @@ export function SemesterCard({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="bottom" className="w-40">
                   {terms.map((t) => (
-                    <DropdownMenuItem key={t} onSelect={() => onSetDraftTerm(t)}>
+                    <DropdownMenuItem
+                      key={t}
+                      onSelect={() => onSetDraftTerm(t)}
+                    >
                       {t}
                     </DropdownMenuItem>
                   ))}
@@ -111,7 +114,10 @@ export function SemesterCard({
                   className="w-36 max-h-56 overflow-auto"
                 >
                   {years.map((y) => (
-                    <DropdownMenuItem key={y} onSelect={() => onSetDraftYear(y)}>
+                    <DropdownMenuItem
+                      key={y}
+                      onSelect={() => onSetDraftYear(y)}
+                    >
                       {y}
                     </DropdownMenuItem>
                   ))}
@@ -190,7 +196,13 @@ export function SemesterCard({
             credits: number,
             prerequisiteRaw: string | null | undefined
           ) => {
-            onAddCourse(subject, courseNumber, section, credits, prerequisiteRaw);
+            onAddCourse(
+              subject,
+              courseNumber,
+              section,
+              credits,
+              prerequisiteRaw
+            );
           }}
         />
       </CardContent>
