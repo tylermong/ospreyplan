@@ -48,4 +48,10 @@ public class PlannedSemesterController
     {
         service.deleteSemester(semesterId);
     }
+
+    @PatchMapping("/{semesterId}")
+    public void updateSemesterTitle(@PathVariable UUID semesterId, @RequestParam String title)
+    {
+        service.updateSemesterTitle(semesterId, title);
+    }
 }

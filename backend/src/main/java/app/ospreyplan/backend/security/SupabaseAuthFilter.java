@@ -103,7 +103,7 @@ public class SupabaseAuthFilter extends OncePerRequestFilter
                     }
                 }
             }
-            catch (Exception ignore)
+            catch (Exception e)
             {
                 // Leave unauthenticated; SecurityConfig will return 401
             }
