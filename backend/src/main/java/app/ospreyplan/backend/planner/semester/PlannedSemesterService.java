@@ -5,7 +5,6 @@ import app.ospreyplan.backend.planner.course.PlannedCourseRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -15,13 +14,11 @@ public class PlannedSemesterService
 {
     private final PlannedSemesterRepository semesterRepository;
     private final PlannedCourseRepository courseRepository;
-    private final EntityManager entityManager;
 
-    public PlannedSemesterService(PlannedSemesterRepository semesterRepository, PlannedCourseRepository courseRepository, EntityManager entityManager)
+    public PlannedSemesterService(PlannedSemesterRepository semesterRepository, PlannedCourseRepository courseRepository)
     {
         this.semesterRepository = semesterRepository;
         this.courseRepository = courseRepository;
-        this.entityManager = entityManager;
     }
 
     public List<PlannedSemester> getSemestersByUserId(UUID userId)
@@ -37,14 +34,7 @@ public class PlannedSemesterService
         semester.setTitle(title);
         semester.setPlannedCourses(new ArrayList<>());
 
-        PlannedSemester saved = semesterRepository.save(semester);
-        // Refresh to load DB-generated columns like created_at/updated_at when the DB generates them
-        try {
-            entityManager.refresh(saved);
-        } catch (Exception ignored) {
-            // If refresh fails for any reason, return the saved entity as-is
-        }
-        return saved;
+        return semesterRepository.save(semester);
     }
 
     @Transactional
