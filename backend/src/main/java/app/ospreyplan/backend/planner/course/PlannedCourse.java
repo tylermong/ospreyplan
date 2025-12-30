@@ -31,6 +31,13 @@ public class PlannedCourse
 
     private Integer credits;
 
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = java.time.OffsetDateTime.now();
+        }
+    }
+
     public UUID getId()
     {
         return id;
