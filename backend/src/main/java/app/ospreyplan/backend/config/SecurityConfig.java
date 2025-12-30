@@ -23,6 +23,7 @@ public class SecurityConfig
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception
     {
+        // TODO: update from deprecated method
         http.cors();
 
         http.csrf(AbstractHttpConfigurer::disable)
