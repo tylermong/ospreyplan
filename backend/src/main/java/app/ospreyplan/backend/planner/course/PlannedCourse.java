@@ -26,6 +26,9 @@ public class PlannedCourse
 
     private String section;
 
+    @Column(name = "created_at")
+    private java.time.OffsetDateTime createdAt;
+
     private Integer credits;
 
     public UUID getId()
@@ -76,6 +79,14 @@ public class PlannedCourse
     public void setSection(String section)
     {
         this.section = section;
+    }
+
+    public java.time.OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(java.time.OffsetDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public Integer getCredits()
