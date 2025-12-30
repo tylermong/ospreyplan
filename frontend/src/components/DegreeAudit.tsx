@@ -1,0 +1,97 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { DegreeAuditResponse, DegreeAuditResult } from "@/types/audit.types";
+import { AuditProgress } from "./AuditProgress";
+import { AuditRequirementCard } from "./AuditRequirementCard";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface DegreeAuditProps {
+  userId: string;
+  refreshTrigger?: number;
+}
+
+export function DegreeAudit({ userId, refreshTrigger }: DegreeAuditProps) {
+  const [data, setData] = useState<DegreeAuditResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAudit = async () => {
+      setLoading(true);
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+        const res = await fetch(`${apiBase}/api/audit/${userId}`, {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const body = await res.json();
+          setData(body);
+        } else {
+          console.error("Audit fetch failed", res.status, res.statusText);
+          if (res.status === 401) {
+             console.warn("User unauthorized for audit. Token might be expired.");
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch audit", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId) {
+      fetchAudit();
+    }
+  }, [userId, refreshTrigger]);
+
+  if (loading) {
+    return <div className="space-y-4">
+        <Skeleton className="h-8 w-full" />
+        <div className="grid gap-4 md:grid-cols-2">
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+        </div>
+    </div>;
+  }
+
+  if (!data || !data.results) return null;
+
+  const results = data.results;
+  const degreeName = data.degreeCode 
+    ? (data.degreeCode === 'bs-computer-science' ? 'B.S. in Computer Science' : 
+       data.degreeCode === 'bs-computer-information-systems' ? 'B.S. in Computer Information Systems' : 
+       data.degreeCode)
+    : 'No Degree Selected';
+
+  const totalCredits = results.reduce((sum, req) => 
+    sum + req.satisfiedBy.reduce((s, c) => s + c.credits, 0), 0);
+
+  // Group by category
+  const groupedResults: Record<string, DegreeAuditResult[]> = {};
+  
+  results.forEach(r => {
+      const cat = r.category;
+      if (!groupedResults[cat]) groupedResults[cat] = [];
+      groupedResults[cat].push(r);
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-end">
+          <h3 className="text-lg font-medium text-muted-foreground">Audit for: <span className="text-foreground font-semibold">{degreeName}</span></h3>
+      </div>
+      <AuditProgress totalCredits={totalCredits} />
+      
+      {Object.entries(groupedResults).map(([category, items]) => (
+        <div key={category} className="space-y-3">
+          <h3 className="text-lg font-semibold tracking-tight">{category} Requirements</h3>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {items.map((req, idx) => (
+              <AuditRequirementCard key={idx} requirement={req} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

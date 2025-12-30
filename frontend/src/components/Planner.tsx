@@ -20,10 +20,12 @@ import { SemesterCard } from "./SemesterCard";
 import { usePlannerApi } from "@/hooks/usePlannerApi";
 import { calculateTotalCredits } from "@/lib/planner-utils";
 import { Course } from "@/types/planner.types";
+import { DegreeAudit } from "./DegreeAudit";
 
 export default function Planner() {
   const {
     semesters,
+    userId,
     showCreditWarning,
     pendingCourse,
     addSemester,
@@ -122,6 +124,8 @@ export default function Planner() {
     setDraftTerm("Fall");
     setDraftYear(new Date().getFullYear());
   }
+
+  const refreshTrigger = semesters.reduce((acc, s) => acc + s.courses.length, 0);
 
   return (
     <div className="space-y-6">
@@ -235,6 +239,13 @@ export default function Planner() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {userId && (
+        <div className="mt-12 border-t pt-8">
+          <h2 className="text-2xl font-semibold mb-6">Degree Audit</h2>
+          <DegreeAudit userId={userId} refreshTrigger={refreshTrigger} />
+        </div>
+      )}
     </div>
   );
 }
