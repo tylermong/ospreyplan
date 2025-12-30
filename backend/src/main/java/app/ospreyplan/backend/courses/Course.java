@@ -1,6 +1,9 @@
 package app.ospreyplan.backend.courses;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import java.util.List;
 
 @Entity
 @Table(name = "courses")
@@ -29,6 +32,10 @@ public class Course
 
     @Column(name = "prerequisite")
     private String prerequisite;
+
+    @Column(name = "attributes", columnDefinition = "text[]")
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    private List<String> attributes;
 
     public CourseId getCourseId()
     {
@@ -106,5 +113,13 @@ public class Course
 
     public void setPrerequisite(String prerequisite) {
         this.prerequisite = prerequisite;
+    }
+
+    public List<String> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(List<String> attributes) {
+        this.attributes = attributes;
     }
 }
