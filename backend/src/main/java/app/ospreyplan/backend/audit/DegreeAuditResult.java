@@ -8,6 +8,7 @@ public class DegreeAuditResult {
     private String category;
     private int requiredCount;
     private List<CourseDTO> satisfiedBy = new ArrayList<>();
+    private List<String> missingCriteria = new ArrayList<>();
 
     public DegreeAuditResult() {}
 
@@ -47,5 +48,13 @@ public class DegreeAuditResult {
 
     public void setSatisfiedBy(List<CourseDTO> satisfiedBy) {
         this.satisfiedBy = satisfiedBy;
+    }
+
+    public List<String> getMissingCriteria() {
+        return missingCriteria;
+    }
+
+    public void setMissingCriteria(List<String> missingCriteria) {
+        this.missingCriteria = missingCriteria;
     }
 }

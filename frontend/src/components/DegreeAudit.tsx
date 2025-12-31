@@ -14,10 +14,16 @@ interface DegreeAuditProps {
 export function DegreeAudit({ userId, refreshTrigger }: DegreeAuditProps) {
   const [data, setData] = useState<DegreeAuditResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     const fetchAudit = async () => {
-      setLoading(true);
+      if (!data) {
+        setLoading(true);
+      } else {
+        setIsUpdating(true);
+      }
+
       try {
         const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
         const res = await fetch(`${apiBase}/api/audit/${userId}`, {
@@ -36,6 +42,7 @@ export function DegreeAudit({ userId, refreshTrigger }: DegreeAuditProps) {
         console.error("Failed to fetch audit", error);
       } finally {
         setLoading(false);
+        setIsUpdating(false);
       }
     };
 
@@ -76,15 +83,18 @@ export function DegreeAudit({ userId, refreshTrigger }: DegreeAuditProps) {
   });
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 transition-opacity duration-200 ${isUpdating ? 'opacity-70' : 'opacity-100'}`}>
       <div className="flex justify-between items-end">
-          <h3 className="text-lg font-medium text-muted-foreground">Audit for: <span className="text-foreground font-semibold">{degreeName}</span></h3>
+          <h3 className="text-lg font-medium text-muted-foreground">
+            Audit for: <span className="text-foreground font-semibold">{degreeName}</span>
+            {isUpdating && <span className="ml-2 text-xs animate-pulse">Updating...</span>}
+          </h3>
       </div>
       <AuditProgress totalCredits={totalCredits} />
       
       {Object.entries(groupedResults).map(([category, items]) => (
         <div key={category} className="space-y-3">
-          <h3 className="text-lg font-semibold tracking-tight">{category} Requirements</h3>
+          <h3 className="text-lg font-semibold tracking-tight">{category}</h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {items.map((req, idx) => (
               <AuditRequirementCard key={idx} requirement={req} />

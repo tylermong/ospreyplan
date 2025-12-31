@@ -11,6 +11,7 @@ export interface DegreeAuditResult {
   category: string;
   requiredCount: number;
   satisfiedBy: CourseDTO[];
+  missingCriteria: string[];
 }
 
 export interface DegreeAuditResponse {

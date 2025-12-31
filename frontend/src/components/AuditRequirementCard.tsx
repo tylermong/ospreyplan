@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle } from "lucide-react";
+import { CheckCircle2, Circle, XCircle } from "lucide-react";
 import { DegreeAuditResult } from "@/types/audit.types";
 
 interface AuditRequirementCardProps {
@@ -16,17 +16,20 @@ export function AuditRequirementCard({ requirement }: AuditRequirementCardProps)
     if (i < requirement.satisfiedBy.length) {
       const course = requirement.satisfiedBy[i];
       slots.push(
-        <div key={`filled-${i}`} className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-900">
+        <div key={`filled-${i}`} className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-900">
           <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
           <span className="text-sm font-medium">{course.subject} {course.courseNumber}</span>
           <span className="text-xs text-muted-foreground ml-auto">{course.credits} cr</span>
         </div>
       );
     } else {
+      const missingIndex = i - requirement.satisfiedBy.length;
+      const missingText = requirement.missingCriteria?.[missingIndex] || "Empty Slot";
+
       slots.push(
-        <div key={`empty-${i}`} className="flex items-center gap-2 p-2 bg-muted/50 rounded border border-dashed">
-          <Circle className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Empty Slot</span>
+        <div key={`empty-${i}`} className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-xl border border-dashed border-red-200 dark:border-red-900">
+          <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+          <span className="text-sm text-muted-foreground">{missingText}</span>
         </div>
       );
     }
