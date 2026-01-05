@@ -24,8 +24,6 @@ public class PlannedCourse
     @Column(name = "course_number")
     private Integer courseNumber;
 
-    private String section;
-
     @Column(name = "created_at")
     private java.time.OffsetDateTime createdAt;
 
@@ -76,16 +74,6 @@ public class PlannedCourse
     public void setCourseNumber(Integer courseNumber)
     {
         this.courseNumber = courseNumber;
-    }
-
-    public String getSection()
-    {
-        return section;
-    }
-
-    public void setSection(String section)
-    {
-        this.section = section;
     }
 
     public java.time.OffsetDateTime getCreatedAt() {

@@ -15,20 +15,11 @@ public class Course
     @Column(name = "name")
     private String name;
 
-    @Column(name = "credits")
-    private Integer credits;
+    @Column(name = "min_credits")
+    private Integer minCredits;
 
-    @Column(name = "capacity")
-    private Integer capacity;
-
-    @Column(name = "filled")
-    private Integer filled;
-
-    @Column(name = "remaining")
-    private Integer remaining;
-
-    @Column(name = "term")
-    private Integer term;
+    @Column(name = "max_credits")
+    private Integer maxCredits;
 
     @Column(name = "prerequisite")
     private String prerequisite;
@@ -57,54 +48,24 @@ public class Course
         this.name = name;
     }
 
-    public Integer getCredits()
+    public Integer getMinCredits()
     {
-        return credits;
+        return minCredits;
     }
 
-    public void setCredits(Integer credits)
+    public void setMinCredits(Integer minCredits)
     {
-        this.credits = credits;
+        this.minCredits = minCredits;
     }
 
-    public Integer getCapacity()
+    public Integer getMaxCredits()
     {
-        return capacity;
+        return maxCredits;
     }
 
-    public void setCapacity(Integer capacity)
+    public void setMaxCredits(Integer maxCredits)
     {
-        this.capacity = capacity;
-    }
-
-    public Integer getFilled()
-    {
-        return filled;
-    }
-
-    public void setFilled(Integer filled)
-    {
-        this.filled = filled;
-    }
-
-    public Integer getRemaining()
-    {
-        return remaining;
-    }
-
-    public void setRemaining(Integer remaining)
-    {
-        this.remaining = remaining;
-    }
-
-    public Integer getTerm()
-    {
-        return term;
-    }
-
-    public void setTerm(Integer term)
-    {
-        this.term = term;
+        this.maxCredits = maxCredits;
     }
 
     public String getPrerequisite() {

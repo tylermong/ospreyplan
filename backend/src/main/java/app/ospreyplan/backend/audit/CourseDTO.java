@@ -3,16 +3,14 @@ package app.ospreyplan.backend.audit;
 public class CourseDTO {
     private String subject;
     private Integer courseNumber;
-    private String section;
     private Integer credits;
     private String name;
 
     public CourseDTO() {}
 
-    public CourseDTO(String subject, Integer courseNumber, String section, Integer credits, String name) {
+    public CourseDTO(String subject, Integer courseNumber, Integer credits, String name) {
         this.subject = subject;
         this.courseNumber = courseNumber;
-        this.section = section;
         this.credits = credits;
         this.name = name;
     }
@@ -31,14 +29,6 @@ public class CourseDTO {
 
     public void setCourseNumber(Integer courseNumber) {
         this.courseNumber = courseNumber;
-    }
-
-    public String getSection() {
-        return section;
-    }
-
-    public void setSection(String section) {
-        this.section = section;
     }
 
     public Integer getCredits() {

@@ -56,7 +56,6 @@ public class DegreeAuditService {
             CourseId courseId = new CourseId();
             courseId.setSubject(pc.getSubject());
             courseId.setCourseNumber(pc.getCourseNumber());
-            courseId.setSection(pc.getSection());
             
             courseRepository.findById(courseId).ifPresent(c -> courseDetailsMap.put(pc.getId(), c));
         }
@@ -108,8 +107,7 @@ public class DegreeAuditService {
                 if (matches(course, req.getCriteria())) {
                     boolean alreadyAdded = result.getSatisfiedBy().stream()
                             .anyMatch(dto -> dto.getSubject().equals(pc.getSubject()) && 
-                                             dto.getCourseNumber().equals(pc.getCourseNumber()) &&
-                                             dto.getSection().equals(pc.getSection()));
+                                             dto.getCourseNumber().equals(pc.getCourseNumber()));
                     
                     if (!alreadyAdded) {
                         result.getSatisfiedBy().add(toDTO(pc, course));
@@ -207,6 +205,6 @@ public class DegreeAuditService {
     }
 
     private CourseDTO toDTO(PlannedCourse pc, Course c) {
-        return new CourseDTO(pc.getSubject(), pc.getCourseNumber(), pc.getSection(), pc.getCredits(), c.getName());
+        return new CourseDTO(pc.getSubject(), pc.getCourseNumber(), pc.getCredits(), c.getName());
     }
 }

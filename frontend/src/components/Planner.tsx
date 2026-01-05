@@ -177,11 +177,10 @@ export default function Planner() {
               onAddCourse={(
                 subject,
                 courseNumber,
-                section,
                 credits,
                 prerequisiteRaw
               ) => {
-                const courseName = `${subject} ${courseNumber} ${section}`;
+                const courseName = `${subject} ${courseNumber}`;
                 addCourse(
                   semester.id,
                   courseName,

@@ -40,7 +40,6 @@ interface SemesterCardProps {
   onAddCourse: (
     subject: string,
     courseNumber: number,
-    section: string,
     credits: number,
     prerequisiteRaw: string | null | undefined
   ) => void;
@@ -192,14 +191,12 @@ export function SemesterCard({
           onAddCourse={(
             subject: string,
             courseNumber: number,
-            section: string,
             credits: number,
             prerequisiteRaw: string | null | undefined
           ) => {
             onAddCourse(
               subject,
               courseNumber,
-              section,
               credits,
               prerequisiteRaw
             );

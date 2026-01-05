@@ -46,7 +46,7 @@ export function usePlannerApi() {
                 year: Number(s.title.split(" ")[1]) || new Date().getFullYear(),
                 courses: (s.plannedCourses || []).map((c) => ({
                   id: c.id,
-                  name: `${c.subject} ${c.courseNumber} ${c.section}`,
+                  name: `${c.subject} ${c.courseNumber}`,
                   credits: c.credits,
                   prerequisite:
                     c.prerequisite === undefined || c.prerequisite === null
@@ -271,22 +271,18 @@ export function usePlannerApi() {
       return;
     }
 
-    const match = courseName.match(/^([A-Z]+)\s+(\d+)\s+([^\s]+)\b/);
+    const match = courseName.match(/^([A-Z]+)\s+(\d+)/);
     let subject = "";
     let courseNumber = 0;
-    let section = "";
     if (match) {
       subject = match[1];
       courseNumber = Number(match[2]);
-      section = match[3];
     }
 
     fetch(
       `${API_BASE}/api/semesters/${semesterId}/courses?subject=${encodeURIComponent(
         subject
-      )}&courseNumber=${courseNumber}&section=${encodeURIComponent(
-        section
-      )}&credits=${encodeURIComponent(String(credits))}`,
+      )}&courseNumber=${courseNumber}&credits=${encodeURIComponent(String(credits))}`,
       {
         method: "POST",
         credentials: "include",

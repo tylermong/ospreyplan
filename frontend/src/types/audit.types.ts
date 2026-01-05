@@ -1,7 +1,6 @@
 export interface CourseDTO {
   subject: string;
   courseNumber: number;
-  section: string;
   credits: number;
   name?: string;
 }
