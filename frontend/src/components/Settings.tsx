@@ -1,166 +1,194 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, } from "@/components/ui/card";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue, } from "@/components/ui/select";
+import { useTheme } from "next-themes";
+import { 
+    Card, 
+    CardContent, 
+    CardDescription, 
+    CardHeader, 
+    CardTitle 
+} from "@/components/ui/card";
+import { 
+    Select, 
+    SelectContent, 
+    SelectGroup, 
+    SelectItem, 
+    SelectLabel, 
+    SelectTrigger, 
+    SelectValue 
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 export default function Settings() {
-  const START_YEAR = 2020;
-  const currentYear = new Date().getFullYear();
-  const years = Array.from(
-    { length: currentYear - START_YEAR + 1 },
-    (_, i) => START_YEAR + i
-  );
+  const { setTheme, theme } = useTheme();
 
+  // 1. Profile State
+  const [profile, setProfile] = useState<{ name: string; email: string; avatar: string } | null>(null);
+  
+  // 2. Academic State
   const [degree, setDegree] = useState<string | null>(null);
-  const [startYear, setStartYear] = useState<number | null>(null);
+  
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
+    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
-    async function load() {
-      const apiBaseUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
-
+    async function fetchData() {
       try {
-        const res = await fetch(`${apiBaseUrl}/api/settings`, {
-          method: "GET",
-          credentials: "include",
-        });
-
-        if (!mounted) return;
-
-        if (res.ok) {
-          const body = await res.json().catch(() => ({}));
-          setDegree(body.degree ?? null);
-          setStartYear(
-            body.startYear === undefined || body.startYear === null
-              ? null
-              : Number(body.startYear)
-          );
+        // Fetch Profile (Reuse your /auth/me endpoint)
+        const authRes = await fetch(`${apiBase}/auth/me`, { credentials: "include" });
+        if (authRes.ok) {
+          const user = await authRes.json();
+          if (mounted) {
+            setProfile({
+              name: user.user_metadata.full_name,
+              email: user.user_metadata.email,
+              avatar: user.user_metadata.avatar_url,
+            });
+          }
         }
-        else {
-          const body = await res.json().catch(() => ({}));
-          if (body && body.error) setError(body.error);
+
+        // Fetch Settings
+        const settingsRes = await fetch(`${apiBase}/api/settings`, { credentials: "include" });
+        if (settingsRes.ok) {
+          const body = await settingsRes.json();
+          if (mounted) {
+            setDegree(body.degree ?? null);
+          }
         }
-      }
-      catch {
-        setError("Failed to load settings");
+      } catch {
+        if (mounted) setError("Failed to load account data.");
+      } finally {
+        if (mounted) setLoading(false);
       }
     }
 
-    load();
-
-    return () => {
-      mounted = false;
-    };
+    fetchData();
+    return () => { mounted = false; };
   }, []);
 
-  async function handleSave(updates?: {
-    degree?: string | null;
-    startYear?: number | null;
-  }) {
-    setError(null);
-
-    const payloadDegree =
-      updates && Object.prototype.hasOwnProperty.call(updates, "degree")
-        ? updates.degree
-        : degree;
-    const payloadStartYear =
-      updates && Object.prototype.hasOwnProperty.call(updates, "startYear")
-        ? updates.startYear
-        : startYear;
-
-    const apiBaseUrl =
-      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+  async function saveSettings(updates: { degree?: string | null; startYear?: number | null }) {
+    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+    const payload = {
+        degree: updates.degree !== undefined ? updates.degree : degree,
+    };
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/settings`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ degree: payloadDegree, startYear: payloadStartYear }),
-      });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        setError(body.error || "Failed to save settings");
-      }
-    }
-    catch {
-      setError("Error saving settings");
+        await fetch(`${apiBase}/api/settings`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload),
+        });
+    } catch {
+        setError("Failed to save changes.");
     }
   }
 
+  if (loading) return <div className="p-8">Loading settings...</div>;
+
   return (
-    <div className="max-w-2xl">
+    <div className="space-y-6 max-w-3xl">
+      <div>
+        <h3 className="text-2xl font-semibold tracking-tight">Account & Settings</h3>
+        <p className="text-sm text-muted-foreground">
+          Manage your profile, academic preferences, and app appearance.
+        </p>
+      </div>
+
+      <Separator />
+
+      {/* SECTION 1: Profile */}
       <Card>
-        <CardContent>
-          <form className="grid gap-6 grid-cols-1 md:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <label className="text-md font-bold">Degree</label>
-              <span className="text-xs text-muted-foreground">
-                Choose the degree program you are enrolled in.
-              </span>
-              <Select
-                value={degree ?? undefined}
-                onValueChange={(selectedDegree) => {
-                  setDegree(selectedDegree);
-                  void handleSave({ degree: selectedDegree });
-                }}
-              >
-                <SelectTrigger className="w-full max-w-sm border-foreground/10">
-                  <SelectValue/>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Degree</SelectLabel>
-                    <SelectItem value="bs-computer-science">
-                      B.S. in Computer Science
-                    </SelectItem>
-                    <SelectItem value="bs-computer-information-systems">
-                      B.S. in Computer Information Systems
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-md font-bold">Start Year</label>
-              <span className="text-xs text-muted-foreground">
-                Choose the year you began your program.
-              </span>
-              <Select
-                value={startYear === null ? undefined : String(startYear)}
-                onValueChange={(selectedYear) => {
-                  const n = Number(selectedYear);
-                  setStartYear(n);
-                  void handleSave({ startYear: n });
-                }}
-              >
-                <SelectTrigger className="w-full max-w-sm border-foreground/10">
-                  <SelectValue/>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Start Year</SelectLabel>
-                    {years.map((y) => (
-                      <SelectItem key={y} value={String(y)}>
-                        {y}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </form>
-          {error && <div className="text-red-500 mt-2">{error}</div>}
+        <CardHeader>
+          <CardTitle>Profile</CardTitle>
+          <CardDescription>Information from your goStockton account.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center gap-6">
+          <Avatar className="h-20 w-20">
+            <AvatarImage src={profile?.avatar} />
+            <AvatarFallback>{profile?.name?.substring(0,2).toUpperCase() ?? "OP"}</AvatarFallback>
+          </Avatar>
+          <div className="space-y-1">
+            <h4 className="font-medium text-lg">{profile?.name || "Guest User"}</h4>
+            <p className="text-sm text-muted-foreground">{profile?.email}</p>
+          </div>
         </CardContent>
-
-  {/* Buttons removed: settings save automatically when changed */}
       </Card>
+
+      {/* SECTION 2: Academic Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Academic Plan</CardTitle>
+          <CardDescription>Personalize your degree audit requirements.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Degree Program</label>
+                <Select
+                    value={degree ?? undefined}
+                    onValueChange={(val) => {
+                        setDegree(val);
+                        void saveSettings({ degree: val });
+                    }}
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select degree" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectGroup>
+                            <SelectLabel>Degrees</SelectLabel>
+                            <SelectItem value="bs-computer-science">B.S. Computer Science</SelectItem>
+                            <SelectItem value="bs-computer-information-systems">B.S. Information Systems</SelectItem>
+                        </SelectGroup>
+                    </SelectContent>
+                </Select>
+            </div>
+        </CardContent>
+      </Card>
+
+      {/* SECTION 3: Appearance */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>Customize the look and feel of the application.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Theme</label>
+                <Select value={theme} onValueChange={setTheme}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select theme" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="light">Light</SelectItem>
+                        <SelectItem value="dark">Dark</SelectItem>
+                        <SelectItem value="system">System</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </CardContent>
+      </Card>
+
+      {/* SECTION 4: Account Management */}
+      <Card className="border-destructive/50">
+        <CardHeader>
+          <CardTitle className="text-destructive">Account Management</CardTitle>
+          <CardDescription className="text-destructive">Permanently delete your account and all associated data.</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+            <Button variant="destructive" className="justify-start">
+                Delete Account
+            </Button>
+        </CardContent>
+      </Card>
+
+      {error && <div className="text-red-500 text-sm">{error}</div>}
     </div>
   );
 }
