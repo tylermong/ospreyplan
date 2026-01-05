@@ -25,6 +25,9 @@ public class RequirementCriteria {
     @Column(name = "min_level")
     private Integer minLevel;
 
+    @Column(name = "group_id")
+    private String groupId;
+
     public UUID getId() {
         return id;
     }
@@ -79,5 +82,13 @@ public class RequirementCriteria {
 
     public void setMinLevel(Integer minLevel) {
         this.minLevel = minLevel;
+    }
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
     }
 }

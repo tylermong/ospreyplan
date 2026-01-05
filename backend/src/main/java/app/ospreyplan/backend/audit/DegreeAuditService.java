@@ -88,6 +88,53 @@ public class DegreeAuditService {
 
         Set<UUID> consumedPlannedCourseIds = new HashSet<>();
 
+        // Pass 0: Grouped Requirements (AND logic within groups)
+        for (DegreeRequirement req : requirements) {
+            if (isOverlayCategory(req.getCategory()) || "ASD".equals(req.getCategory()) || "CATCH_ALL".equals(req.getCategory())) continue;
+
+            DegreeAuditResult result = results.get(reqIdToIndex.get(req.getId()));
+            if (result.getSatisfiedBy().size() >= req.getRequiredCount()) continue;
+
+            Map<String, List<RequirementCriteria>> groups = req.getCriteria().stream()
+                    .filter(c -> c.getGroupId() != null)
+                    .collect(Collectors.groupingBy(RequirementCriteria::getGroupId));
+
+            for (Map.Entry<String, List<RequirementCriteria>> entry : groups.entrySet()) {
+                List<RequirementCriteria> groupCriteria = entry.getValue();
+                List<PlannedCourse> groupMatches = new ArrayList<>();
+                boolean groupSatisfied = true;
+                Set<UUID> tempConsumed = new HashSet<>();
+
+                for (RequirementCriteria criteria : groupCriteria) {
+                    boolean criteriaMet = false;
+                    for (PlannedCourse pc : plannedCourses) {
+                        if (consumedPlannedCourseIds.contains(pc.getId()) || tempConsumed.contains(pc.getId())) continue;
+                        
+                        Course course = courseDetailsMap.get(pc.getId());
+                        if (course != null && matchesCriteria(course, criteria)) {
+                            groupMatches.add(pc);
+                            tempConsumed.add(pc.getId());
+                            criteriaMet = true;
+                            break;
+                        }
+                    }
+                    if (!criteriaMet) {
+                        groupSatisfied = false;
+                        break;
+                    }
+                }
+
+                if (groupSatisfied) {
+                    for (PlannedCourse pc : groupMatches) {
+                        Course c = courseDetailsMap.get(pc.getId());
+                        result.getSatisfiedBy().add(toDTO(pc, c));
+                        consumedPlannedCourseIds.add(pc.getId());
+                    }
+                    if (result.getSatisfiedBy().size() >= req.getRequiredCount()) break;
+                }
+            }
+        }
+
         // Pass 1: Primary (MAJOR, GEN_ED)
         for (PlannedCourse pc : plannedCourses) {
             Course course = courseDetailsMap.get(pc.getId());
@@ -155,9 +202,26 @@ public class DegreeAuditService {
 
             int missingCount = req.getRequiredCount() - result.getSatisfiedBy().size();
             if (missingCount > 0) {
-                String criteriaDesc = req.getCriteria().stream()
-                        .map(this::generateMissingCriteriaDescription)
-                        .collect(Collectors.joining(", "));
+                List<String> descriptions = new ArrayList<>();
+
+                // Groups
+                req.getCriteria().stream()
+                        .filter(c -> c.getGroupId() != null)
+                        .collect(Collectors.groupingBy(RequirementCriteria::getGroupId))
+                        .values()
+                        .forEach(group -> {
+                            String groupDesc = group.stream()
+                                    .map(this::generateMissingCriteriaDescription)
+                                    .collect(Collectors.joining(" + "));
+                            descriptions.add(groupDesc);
+                        });
+
+                // Singles
+                req.getCriteria().stream()
+                        .filter(c -> c.getGroupId() == null)
+                        .forEach(c -> descriptions.add(generateMissingCriteriaDescription(c)));
+
+                String criteriaDesc = String.join(", ", descriptions);
 
                 for (int j = 0; j < missingCount; j++) {
                     result.getMissingCriteria().add(criteriaDesc);
@@ -189,32 +253,38 @@ public class DegreeAuditService {
 
     private boolean matches(Course course, List<RequirementCriteria> criteriaList) {
         for (RequirementCriteria criteria : criteriaList) {
-            boolean match = true;
-            
-            if ("COURSE".equals(criteria.getType())) {
-                // Specific Course Match (Subject + Number)
-                if (criteria.getSubject() != null && !criteria.getSubject().equals(course.getCourseId().getSubject())) match = false;
-                if (criteria.getCourseNumber() != null && !criteria.getCourseNumber().equals(course.getCourseId().getCourseNumber().intValue())) match = false;
-            } else if ("RANGE".equals(criteria.getType())) {
-                // Range Match (Subject + Min Level)
-                if (criteria.getSubject() != null && !criteria.getSubject().equals(course.getCourseId().getSubject())) match = false;
-                if (criteria.getMinLevel() != null && course.getCourseId().getCourseNumber() < criteria.getMinLevel()) match = false;
-            } else if ("SUBJECT".equals(criteria.getType())) {
-                // Subject Match (Any course with this subject)
-                if (criteria.getSubject() != null && !criteria.getSubject().equals(course.getCourseId().getSubject())) match = false;
-            } else if ("ATTRIBUTE".equals(criteria.getType())) {
-                // Attribute Match (Attribute + Optional Min Level)
-                if (criteria.getAttribute() != null) {
-                    if (course.getAttributes() == null || !course.getAttributes().contains(criteria.getAttribute())) match = false;
-                }
-                if (criteria.getMinLevel() != null) {
-                    if (course.getCourseId().getCourseNumber() < criteria.getMinLevel()) match = false;
-                }
-            } else if ("CATCH_ALL".equals(criteria.getType())) {
-                match = true;
-            }
+            if (criteria.getGroupId() != null) continue; // Skip grouped criteria
+            if (matchesCriteria(course, criteria)) return true;
+        }
+        return false;
+    }
 
-            if (match) return true;
+    private boolean matchesCriteria(Course course, RequirementCriteria criteria) {
+        if ("COURSE".equals(criteria.getType())) {
+            // Specific Course Match (Subject + Number)
+            if (criteria.getSubject() != null && !criteria.getSubject().equals(course.getCourseId().getSubject())) return false;
+            if (criteria.getCourseNumber() != null && !criteria.getCourseNumber().equals(course.getCourseId().getCourseNumber().intValue())) return false;
+            return true;
+        } else if ("RANGE".equals(criteria.getType())) {
+            // Range Match (Subject + Min Level)
+            if (criteria.getSubject() != null && !criteria.getSubject().equals(course.getCourseId().getSubject())) return false;
+            if (criteria.getMinLevel() != null && course.getCourseId().getCourseNumber() < criteria.getMinLevel()) return false;
+            return true;
+        } else if ("SUBJECT".equals(criteria.getType())) {
+            // Subject Match (Any course with this subject)
+            if (criteria.getSubject() != null && !criteria.getSubject().equals(course.getCourseId().getSubject())) return false;
+            return true;
+        } else if ("ATTRIBUTE".equals(criteria.getType())) {
+            // Attribute Match (Attribute + Optional Min Level)
+            if (criteria.getAttribute() != null) {
+                if (course.getAttributes() == null || !course.getAttributes().contains(criteria.getAttribute())) return false;
+            }
+            if (criteria.getMinLevel() != null) {
+                if (course.getCourseId().getCourseNumber() < criteria.getMinLevel()) return false;
+            }
+            return true;
+        } else if ("CATCH_ALL".equals(criteria.getType())) {
+            return true;
         }
         return false;
     }
