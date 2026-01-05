@@ -9,9 +9,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface DegreeAuditProps {
   userId: string;
   refreshTrigger?: number;
+  totalCredits: number;
 }
 
-export function DegreeAudit({ userId, refreshTrigger }: DegreeAuditProps) {
+export function DegreeAudit({ userId, refreshTrigger, totalCredits }: DegreeAuditProps) {
   const [data, setData] = useState<DegreeAuditResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -73,9 +74,6 @@ export function DegreeAudit({ userId, refreshTrigger }: DegreeAuditProps) {
        data.degreeCode === 'bs-computer-information-systems' ? 'B.S. in Computer Information Systems' : 
        data.degreeCode)
     : 'No Degree Selected';
-
-  const totalCredits = results.reduce((sum, req) => 
-    sum + req.satisfiedBy.reduce((s, c) => s + c.credits, 0), 0);
 
   // Group by category
   const groupedResults: Record<string, DegreeAuditResult[]> = {};
