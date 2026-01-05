@@ -2,18 +2,13 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { CalendarDays, Monitor, Settings } from "lucide-react";
+import { CalendarDays, Settings } from "lucide-react";
 import { NavItems } from "@/components/nav-items";
 import { NavUser } from "@/components/nav-user";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail, } from "@/components/ui/sidebar";
 import Image from "next/image";
 
 const items = [
-  {
-    name: "Dashboard",
-    url: "/dashboard",
-    icon: Monitor,
-  },
   {
     name: "Planner",
     url: "/planner",
@@ -65,7 +60,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-                <Link href="/dashboard" className="flex items-center gap-2">
+                <Link href="/planner" className="flex items-center gap-2">
                 <Image
                   src="/ospreyplan-black-transparent.png"
                   alt="OspreyPlan"

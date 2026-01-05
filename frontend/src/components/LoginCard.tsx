@@ -35,13 +35,13 @@ export default function LoginCard() {
   const router = useRouter();
 
   React.useEffect(() => {
-    // Check whether the user is already authenticated. If so, redirect to dashboard.
+    // Check whether the user is already authenticated. If so, redirect to the planner.
     const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
     void (async () => {
       try {
         const res = await fetch(`${apiBase}/auth/me`, { method: "GET", credentials: "include" });
         if (res.ok) {
-          router.replace("/dashboard");
+          router.replace("/planner");
         }
       } catch (error) {
         console.error("Failed to check authentication status", error);
