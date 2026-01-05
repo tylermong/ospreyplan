@@ -18,10 +18,10 @@ export function DegreeAudit({ userId, refreshTrigger }: DegreeAuditProps) {
 
   useEffect(() => {
     const fetchAudit = async () => {
-      if (!data) {
-        setLoading(true);
-      } else {
+      if (data) {
         setIsUpdating(true);
+      } else {
+        setLoading(true);
       }
 
       try {
