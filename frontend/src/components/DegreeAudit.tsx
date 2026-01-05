@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { DegreeAuditResponse, DegreeAuditResult } from "@/types/audit.types";
 import { AuditProgress } from "./AuditProgress";
 import { AuditRequirementCard } from "./AuditRequirementCard";
@@ -15,13 +15,16 @@ export function DegreeAudit({ userId, refreshTrigger }: DegreeAuditProps) {
   const [data, setData] = useState<DegreeAuditResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const loadedUserId = useRef<string | null>(null);
 
   useEffect(() => {
     const fetchAudit = async () => {
-      if (data) {
-        setIsUpdating(true);
-      } else {
+      const isFirstLoad = loadedUserId.current !== userId;
+
+      if (isFirstLoad) {
         setLoading(true);
+      } else {
+        setIsUpdating(true);
       }
 
       try {
@@ -32,6 +35,7 @@ export function DegreeAudit({ userId, refreshTrigger }: DegreeAuditProps) {
         if (res.ok) {
           const body = await res.json();
           setData(body);
+          loadedUserId.current = userId;
         } else {
           console.error("Audit fetch failed", res.status, res.statusText);
           if (res.status === 401) {
