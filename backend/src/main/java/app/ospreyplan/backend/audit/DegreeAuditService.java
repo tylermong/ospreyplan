@@ -87,6 +87,7 @@ public class DegreeAuditService {
         }
 
         Set<UUID> consumedPlannedCourseIds = new HashSet<>();
+        Map<String, Queue<String>> specificMissingCriteria = new HashMap<>();
 
         // Pass 0: Grouped Requirements (AND logic within groups)
         for (DegreeRequirement req : requirements) {
@@ -131,6 +132,61 @@ public class DegreeAuditService {
                         consumedPlannedCourseIds.add(pc.getId());
                     }
                     if (result.getSatisfiedBy().size() >= req.getRequiredCount()) break;
+                }
+            }
+        }
+
+        // Pass 0.5: Partial Group Matches (Prioritize finishing a started group)
+        for (DegreeRequirement req : requirements) {
+            if (isOverlayCategory(req.getCategory()) || "ASD".equals(req.getCategory()) || "CATCH_ALL".equals(req.getCategory())) continue;
+
+            DegreeAuditResult result = results.get(reqIdToIndex.get(req.getId()));
+            if (result.getSatisfiedBy().size() >= req.getRequiredCount()) continue;
+
+            Map<String, List<RequirementCriteria>> groups = req.getCriteria().stream()
+                    .filter(c -> c.getGroupId() != null)
+                    .collect(Collectors.groupingBy(RequirementCriteria::getGroupId));
+
+            for (Map.Entry<String, List<RequirementCriteria>> entry : groups.entrySet()) {
+                List<RequirementCriteria> groupCriteria = entry.getValue();
+                List<PlannedCourse> groupMatches = new ArrayList<>();
+                List<RequirementCriteria> missingInGroup = new ArrayList<>();
+                
+                // Check which parts of the group are met
+                for (RequirementCriteria criteria : groupCriteria) {
+                    boolean criteriaMet = false;
+                    for (PlannedCourse pc : plannedCourses) {
+                        if (consumedPlannedCourseIds.contains(pc.getId())) continue;
+                        
+                        Course course = courseDetailsMap.get(pc.getId());
+                        if (course != null && matchesCriteria(course, criteria)) {
+                            groupMatches.add(pc);
+                            criteriaMet = true;
+                            break; // Use this course for this criteria
+                        }
+                    }
+                    if (!criteriaMet) {
+                        missingInGroup.add(criteria);
+                    }
+                }
+
+                // If we have at least one match but not all, commit to this group
+                if (!groupMatches.isEmpty() && !missingInGroup.isEmpty()) {
+                    // Consume the matched courses
+                    for (PlannedCourse pc : groupMatches) {
+                        Course c = courseDetailsMap.get(pc.getId());
+                        result.getSatisfiedBy().add(toDTO(pc, c));
+                        consumedPlannedCourseIds.add(pc.getId());
+                    }
+
+                    // Queue the specific missing parts as suggestions
+                    Queue<String> suggestions = specificMissingCriteria.computeIfAbsent(req.getId(), k -> new LinkedList<>());
+                    for (RequirementCriteria missing : missingInGroup) {
+                        suggestions.add(generateMissingCriteriaDescription(missing));
+                    }
+                    
+                    // Stop looking for other groups for this requirement to avoid mixing (e.g. A from Group 1 and C from Group 2)
+                    break; 
                 }
             }
         }
@@ -202,29 +258,43 @@ public class DegreeAuditService {
 
             int missingCount = req.getRequiredCount() - result.getSatisfiedBy().size();
             if (missingCount > 0) {
-                List<String> descriptions = new ArrayList<>();
+                // Check for specific suggestions from Pass 0.5
+                Queue<String> suggestions = specificMissingCriteria.get(req.getId());
+                
+                if (suggestions != null && !suggestions.isEmpty()) {
+                    // Use specific suggestions first
+                    while (missingCount > 0 && !suggestions.isEmpty()) {
+                        result.getMissingCriteria().add(suggestions.poll());
+                        missingCount--;
+                    }
+                }
+                
+                // If still missing slots, use generic descriptions
+                if (missingCount > 0) {
+                    List<String> descriptions = new ArrayList<>();
 
-                // Groups
-                req.getCriteria().stream()
-                        .filter(c -> c.getGroupId() != null)
-                        .collect(Collectors.groupingBy(RequirementCriteria::getGroupId))
-                        .values()
-                        .forEach(group -> {
-                            String groupDesc = group.stream()
-                                    .map(this::generateMissingCriteriaDescription)
-                                    .collect(Collectors.joining(" + "));
-                            descriptions.add(groupDesc);
-                        });
+                    // Groups
+                    req.getCriteria().stream()
+                            .filter(c -> c.getGroupId() != null)
+                            .collect(Collectors.groupingBy(RequirementCriteria::getGroupId))
+                            .values()
+                            .forEach(group -> {
+                                String groupDesc = group.stream()
+                                        .map(this::generateMissingCriteriaDescription)
+                                        .collect(Collectors.joining(" + "));
+                                descriptions.add(groupDesc);
+                            });
 
-                // Singles
-                req.getCriteria().stream()
-                        .filter(c -> c.getGroupId() == null)
-                        .forEach(c -> descriptions.add(generateMissingCriteriaDescription(c)));
+                    // Singles
+                    req.getCriteria().stream()
+                            .filter(c -> c.getGroupId() == null)
+                            .forEach(c -> descriptions.add(generateMissingCriteriaDescription(c)));
 
-                String criteriaDesc = String.join(", ", descriptions);
+                    String criteriaDesc = String.join(" / ", descriptions);
 
-                for (int j = 0; j < missingCount; j++) {
-                    result.getMissingCriteria().add(criteriaDesc);
+                    for (int j = 0; j < missingCount; j++) {
+                        result.getMissingCriteria().add(criteriaDesc);
+                    }
                 }
             }
         }
