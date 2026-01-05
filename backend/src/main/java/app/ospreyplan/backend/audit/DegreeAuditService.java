@@ -48,7 +48,22 @@ public class DegreeAuditService {
         }
 
         List<DegreeRequirement> requirements = degreeRequirementRepository.findByDegreeCodeOrderByPriorityAsc(degreeCode);
-        List<PlannedCourse> plannedCourses = plannedCourseRepository.findByPlannedSemester_UserIdOrderByCreatedAtAsc(userId);
+        List<PlannedCourse> allPlannedCourses = plannedCourseRepository.findByPlannedSemester_UserIdOrderByCreatedAtAsc(userId);
+
+        // Deduplicate courses: Keep only one instance of each (Subject + Number), preferring higher credits
+        Map<String, PlannedCourse> uniqueCoursesMap = new HashMap<>();
+        for (PlannedCourse pc : allPlannedCourses) {
+            String key = pc.getSubject() + "-" + pc.getCourseNumber();
+            if (!uniqueCoursesMap.containsKey(key)) {
+                uniqueCoursesMap.put(key, pc);
+            } else {
+                PlannedCourse existing = uniqueCoursesMap.get(key);
+                if (pc.getCredits() > existing.getCredits()) {
+                    uniqueCoursesMap.put(key, pc);
+                }
+            }
+        }
+        List<PlannedCourse> plannedCourses = new ArrayList<>(uniqueCoursesMap.values());
 
         // Map PlannedCourse to Course details
         Map<UUID, Course> courseDetailsMap = new HashMap<>();

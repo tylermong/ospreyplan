@@ -43,6 +43,14 @@ public class PlannedSemesterService
         PlannedSemester semester = semesterRepository.findById(semesterId)
                 .orElseThrow(() -> new IllegalArgumentException("Semester not found"));
 
+        boolean exists = semester.getPlannedCourses().stream()
+                .anyMatch(pc -> pc.getSubject().equals(subject) && pc.getCourseNumber().equals(courseNumber));
+
+        if (exists)
+        {
+            throw new IllegalArgumentException("Course " + subject + " " + courseNumber + " is already in this semester.");
+        }
+
         PlannedCourse course = new PlannedCourse();
         course.setPlannedSemester(semester);
         course.setSubject(subject);
