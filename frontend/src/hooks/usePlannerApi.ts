@@ -236,7 +236,8 @@ export function usePlannerApi() {
     semesterId: string,
     courseName: string,
     credits: number,
-    prerequisiteRaw?: string | null
+    prerequisiteRaw?: string | null,
+    force?: boolean
   ) {
     const semester = semesters.find((s) => s.id === semesterId);
     if (!semester) return;
@@ -260,7 +261,7 @@ export function usePlannerApi() {
     const currentCredits = calculateTotalCredits(semester);
     const newTotalCredits = currentCredits + credits;
 
-    if (newTotalCredits > 21) {
+    if (newTotalCredits > 21 && !force) {
       setPendingCourse({ semesterId, courseName, credits, prerequisiteRaw });
       setShowCreditWarning(true);
       return;
@@ -471,7 +472,7 @@ export function usePlannerApi() {
 
     const { semesterId, courseName, credits, prerequisiteRaw } = pendingCourse;
 
-    addCourse(semesterId, courseName, credits, prerequisiteRaw);
+    addCourse(semesterId, courseName, credits, prerequisiteRaw, true);
 
     setShowCreditWarning(false);
     setPendingCourse(null);
