@@ -127,6 +127,12 @@ export default function Planner() {
 
   const refreshTrigger = semesters.reduce((acc, s) => acc + s.courses.length, 0);
 
+  const totalPlannedCredits = useMemo(() => {
+    return semesters.reduce((acc, s) => {
+      return acc + s.courses.reduce((sum, c) => sum + c.credits, 0);
+    }, 0);
+  }, [semesters]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4 text-sm">
@@ -242,7 +248,7 @@ export default function Planner() {
       {userId && (
         <div className="mt-12 border-t pt-8">
           <h2 className="text-2xl font-semibold mb-6">Degree Audit</h2>
-          <DegreeAudit userId={userId} refreshTrigger={refreshTrigger} />
+          <DegreeAudit userId={userId} refreshTrigger={refreshTrigger} totalCredits={totalPlannedCredits} />
         </div>
       )}
     </div>
