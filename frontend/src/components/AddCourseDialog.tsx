@@ -125,7 +125,6 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
   const [searchQuery, setSearchQuery] = React.useState("");
   const deferredSearch = React.useDeferredValue(searchQuery);
   const [loading, setLoading] = React.useState(false);
-  const [isPending, startTransition] = React.useTransition();
   const [credits, setCredits] = React.useState<string>("");
 
   React.useEffect(() => {
@@ -202,9 +201,8 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
   }, []);
 
   const handleSearchChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    startTransition(() => setSearchQuery(value));
-  }, [startTransition]);
+    setSearchQuery(e.target.value);
+  }, []);
 
   const handleSelect = React.useCallback((key: string) => {
     setSelectedKey(key);
@@ -222,7 +220,6 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
           Add course
         </Button>
       </DialogTrigger>
-      {open && (
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Add Course</DialogTitle>
@@ -287,12 +284,11 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
             <Button variant="outline" onClick={handleCancel}>
               Cancel
             </Button>
-            <Button onClick={handleAddCourse} disabled={!selectedCourse || isPending || !isCreditsValid}>
+            <Button onClick={handleAddCourse} disabled={!selectedCourse || !isCreditsValid}>
               Add course
             </Button>
           </DialogFooter>
         </DialogContent>
-      )}
 
     </Dialog>
   );
