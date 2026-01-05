@@ -24,9 +24,17 @@ public class PlannedCourse
     @Column(name = "course_number")
     private Integer courseNumber;
 
-    private String section;
+    @Column(name = "created_at")
+    private java.time.OffsetDateTime createdAt;
 
     private Integer credits;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = java.time.OffsetDateTime.now();
+        }
+    }
 
     public UUID getId()
     {
@@ -68,14 +76,12 @@ public class PlannedCourse
         this.courseNumber = courseNumber;
     }
 
-    public String getSection()
-    {
-        return section;
+    public java.time.OffsetDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setSection(String section)
-    {
-        this.section = section;
+    public void setCreatedAt(java.time.OffsetDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public Integer getCredits()

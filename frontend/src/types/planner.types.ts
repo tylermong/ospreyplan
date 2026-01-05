@@ -18,7 +18,6 @@ export type BackendPlannedCourse = {
   id: string;
   subject: string;
   courseNumber: number;
-  section: string;
   credits: number;
   prerequisite?: string | null;
 };
