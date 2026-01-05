@@ -157,7 +157,7 @@ public class DegreeAuditService {
             if (missingCount > 0) {
                 String criteriaDesc = req.getCriteria().stream()
                         .map(this::generateMissingCriteriaDescription)
-                        .collect(Collectors.joining(" OR "));
+                        .collect(Collectors.joining(", "));
 
                 for (int j = 0; j < missingCount; j++) {
                     result.getMissingCriteria().add(criteriaDesc);
