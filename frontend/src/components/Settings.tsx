@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 import { 
     Card, 
     CardContent, 
@@ -9,6 +10,17 @@ import {
     CardHeader, 
     CardTitle 
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
     Select, 
     SelectContent, 
@@ -24,6 +36,10 @@ import { Separator } from "@/components/ui/separator";
 
 export default function Settings() {
   const { setTheme, theme } = useTheme();
+  const router = useRouter();
+
+  const [deleting, setDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // 1. Profile State
   const [profile, setProfile] = useState<{ name: string; email: string; avatar: string } | null>(null);
@@ -87,6 +103,32 @@ export default function Settings() {
         });
     } catch {
         setError("Failed to save changes.");
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (deleting) return;
+    setDeleting(true);
+    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+
+    try {
+        const res = await fetch(`${apiBase}/auth/me`, {
+            method: "DELETE",
+            credentials: "include",
+        });
+        
+        if (res.ok) {
+            setDeleteDialogOpen(false);
+            router.push("/");
+            return;
+        }
+        setError("Failed to delete account. Please try again.");
+        setDeleteDialogOpen(false);
+    } catch {
+        setError("Failed to delete account. Please try again.");
+        setDeleteDialogOpen(false);
+    } finally {
+        setDeleting(false);
     }
   }
 
@@ -182,9 +224,35 @@ export default function Settings() {
           <CardDescription className="text-destructive">Permanently delete your account and all associated data.</CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
-            <Button variant="destructive" className="justify-start">
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="justify-start">
                 Delete Account
-            </Button>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete your account
+                  and remove your data from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault();
+                    void handleDeleteAccount();
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={deleting}
+                >
+                  {deleting ? "Deleting..." : "Delete Account"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
 
