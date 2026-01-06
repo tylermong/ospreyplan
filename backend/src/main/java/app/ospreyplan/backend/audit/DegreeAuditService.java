@@ -34,8 +34,8 @@ public class DegreeAuditService {
         return "ATTRIBUTE".equals(category) || 
                "Attribute Requirements".equals(category) ||
                "Writing Requirements".equals(category) ||
-               "Quantitative Requirement".equals(category) ||
-               "Race and Racism Education".equals(category);
+               "Quantitative Requirements".equals(category) ||
+               "Race and Racism Education Requirements".equals(category);
     }
 
     public DegreeAuditResponse audit(UUID userId) {
