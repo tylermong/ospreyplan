@@ -68,7 +68,9 @@ VALUES
 -- 4. QUANTITATIVE ANALYSIS - Priority: 30
 --------------------------------------------------------------------------------
 INSERT INTO public.degree_requirements (id, degree_code, category, name, required_count, priority)
-VALUES ('quantitative-analysis', 'bs-computer-information-systems', 'Major in Computer Information Systems, CIST, BS', 'Quantitative Analysis', 2, 30);
+VALUES 
+  ('quantitative-analysis-1206', 'bs-computer-information-systems', 'Major in Computer Information Systems, CIST, BS', 'Statistics', 1, 30),
+  ('quantitative-analysis-2225', 'bs-computer-information-systems', 'Major in Computer Information Systems, CIST, BS', 'Discrete Mathematics', 1, 31);
 
 INSERT INTO public.requirement_criteria (requirement_id, type, subject, course_number)
 VALUES 
@@ -80,18 +82,18 @@ VALUES
 --------------------------------------------------------------------------------
 INSERT INTO public.degree_requirements (id, degree_code, category, name, required_count, priority)
 VALUES 
-  ('gen-gis', 'bs-computer-information-systems', 'General Studies for Bachelor of Science, BFA, BSN', 'General Integration and Synthesis (GIS)', 1, 50),
-  ('gen-gen', 'bs-computer-information-systems', 'General Studies for Bachelor of Science, BFA, BSN', 'General Interdisciplinary (GEN)', 1, 55),
-  ('gen-gah', 'bs-computer-information-systems', 'General Studies for Bachelor of Science, BFA, BSN', 'General Arts and Humanities (GAH)', 2, 60),
-  ('gen-gnm', 'bs-computer-information-systems', 'General Studies for Bachelor of Science, BFA, BSN', 'General Natural Mathematics and Sciences (GNM)', 2, 65),
-  ('gen-gss', 'bs-computer-information-systems', 'General Studies for Bachelor of Science, BFA, BSN', 'General Social and Behavioral Sciences (GSS)', 2, 70);
+  ('cis-gen-gis', 'bs-computer-information-systems', 'General Studies for Bachelor of Science, BFA, BSN', 'General Integration and Synthesis (GIS)', 1, 50),
+  ('cis-gen-gen', 'bs-computer-information-systems', 'General Studies for Bachelor of Science, BFA, BSN', 'General Interdisciplinary (GEN)', 1, 55),
+  ('cis-gen-gah', 'bs-computer-information-systems', 'General Studies for Bachelor of Science, BFA, BSN', 'General Arts and Humanities (GAH)', 2, 60),
+  ('cis-gen-gnm', 'bs-computer-information-systems', 'General Studies for Bachelor of Science, BFA, BSN', 'General Natural Mathematics and Sciences (GNM)', 2, 65),
+  ('cis-gen-gss', 'bs-computer-information-systems', 'General Studies for Bachelor of Science, BFA, BSN', 'General Social and Behavioral Sciences (GSS)', 2, 70);
 
 INSERT INTO public.requirement_criteria (requirement_id, type, subject)
 VALUES 
-  ('gen-gah', 'SUBJECT', 'GAH'),
-  ('gen-gis', 'SUBJECT', 'GIS'),
-  ('gen-gnm', 'SUBJECT', 'GNM'),
-  ('gen-gss', 'SUBJECT', 'GSS');
+  ('cis-gen-gah', 'SUBJECT', 'GAH'),
+  ('cis-gen-gis', 'SUBJECT', 'GIS'),
+  ('cis-gen-gnm', 'SUBJECT', 'GNM'),
+  ('cis-gen-gss', 'SUBJECT', 'GSS');
 
 --------------------------------------------------------------------------------
 -- 6. ATTRIBUTES (Multi-Dippers) - Priority: 100+
@@ -100,65 +102,68 @@ VALUES
 -- Attribute Requirements
 INSERT INTO public.degree_requirements (id, degree_code, category, name, required_count, priority)
 VALUES 
-  ('attr-a', 'bs-computer-science', 'Attribute Requirements', 'Arts (A)', 1, 100),
-  ('attr-h', 'bs-computer-science', 'Attribute Requirements', 'Historical Consciousness (H)', 1, 101),
-  ('attr-v', 'bs-computer-science', 'Attribute Requirements', 'Values/Ethics (V)', 1, 102),
-  ('attr-i', 'bs-computer-science', 'Attribute Requirements', 'International/Multicultural (I)', 1, 103);
+  ('cis-attr-a', 'bs-computer-science', 'Attribute Requirements', 'Arts (A)', 1, 100),
+  ('cis-attr-h', 'bs-computer-science', 'Attribute Requirements', 'Historical Consciousness (H)', 1, 101),
+  ('cis-attr-v', 'bs-computer-science', 'Attribute Requirements', 'Values/Ethics (V)', 1, 102),
+  ('cis-attr-i', 'bs-computer-science', 'Attribute Requirements', 'International/Multicultural (I)', 1, 103);
 
 INSERT INTO public.requirement_criteria (requirement_id, type, attribute)
 VALUES 
-  ('attr-a', 'ATTRIBUTE', 'A'),
-  ('attr-h', 'ATTRIBUTE', 'H'),
-  ('attr-v', 'ATTRIBUTE', 'V'),
-  ('attr-i', 'ATTRIBUTE', 'I');
+  ('cis-attr-a', 'ATTRIBUTE', 'A'),
+  ('cis-attr-h', 'ATTRIBUTE', 'H'),
+  ('cis-attr-v', 'ATTRIBUTE', 'V'),
+  ('cis-attr-i', 'ATTRIBUTE', 'I');
 
 -- Writing Requirements
 INSERT INTO public.degree_requirements (id, degree_code, category, name, required_count, priority)
 VALUES 
-  ('write-w1', 'bs-computer-science', 'Writing Requirements', 'Writing (W1)', 1, 110),
-  ('write-w1w2', 'bs-computer-science', 'Writing Requirements', 'Writing (W1 or W2)', 2, 111),
-  ('write-upper', 'bs-computer-science', 'Writing Requirements', 'Upper Level Writing (W1 or W2, 3000+)', 1, 112);
+  ('cis-write-w1', 'bs-computer-information-systems', 'Writing Requirements', 'Writing (W1)', 1, 110),
+  ('cis-write-w1w2', 'bs-computer-information-systems', 'Writing Requirements', 'Writing (W1 or W2)', 2, 111),
+  ('cis-write-upper', 'bs-computer-information-systems', 'Writing Requirements', 'Upper Level Writing (W1 or W2, 3000+)', 1, 112);
 
 INSERT INTO public.requirement_criteria (requirement_id, type, attribute)
 VALUES 
-  ('write-w1', 'ATTRIBUTE', 'W1'),
-  ('write-w1w2', 'ATTRIBUTE', 'W1'), ('write-w1w2', 'ATTRIBUTE', 'W2');
+  ('cis-write-w1', 'ATTRIBUTE', 'W1'),
+  ('cis-write-w1w2', 'ATTRIBUTE', 'W1'),
+  ('cis-write-w1w2', 'ATTRIBUTE', 'W2');
 
 INSERT INTO public.requirement_criteria (requirement_id, type, attribute, min_level)
 VALUES 
-  ('write-upper', 'ATTRIBUTE', 'W1', 3000),
-  ('write-upper', 'ATTRIBUTE', 'W2', 3000);
+  ('cis-write-upper', 'ATTRIBUTE', 'W1', 3000),
+  ('cis-write-upper', 'ATTRIBUTE', 'W2', 3000);
 
 -- Quantitative Requirements
 INSERT INTO public.degree_requirements (id, degree_code, category, name, required_count, priority)
 VALUES 
-  ('quant-q1', 'bs-computer-science', 'Quantitative Reasoning Requirements', 'Quantitative Reasoning (Q1)', 1, 120),
-  ('quant-q2', 'bs-computer-science', 'Quantitative Reasoning Requirements', 'Quantitative Reasoning (Q2)', 1, 121),
-  ('quant-q1q2', 'bs-computer-science', 'Quantitative Reasoning Requirements', 'Quantitative Reasoning (Q1 or Q2)', 1, 122);
+  ('cis-quant-q1', 'bs-computer-information-systems', 'Quantitative Reasoning Requirements', 'Quantitative Reasoning (Q1)', 1, 120),
+  ('cis-quant-q2', 'bs-computer-information-systems', 'Quantitative Reasoning Requirements', 'Quantitative Reasoning (Q2)', 1, 121),
+  ('cis-quant-q1q2', 'bs-computer-information-systems', 'Quantitative Reasoning Requirements', 'Quantitative Reasoning (Q1 or Q2)', 1, 122);
 
 INSERT INTO public.requirement_criteria (requirement_id, type, attribute)
 VALUES 
-  ('quant-q1', 'ATTRIBUTE', 'Q1'),
-  ('quant-q2', 'ATTRIBUTE', 'Q2'),
-  ('quant-q1q2', 'ATTRIBUTE', 'Q1'), ('quant-q1q2', 'ATTRIBUTE', 'Q2');
+  ('cis-quant-q1', 'ATTRIBUTE', 'Q1'),
+  ('cis-quant-q2', 'ATTRIBUTE', 'Q2'),
+  ('cis-quant-q1q2', 'ATTRIBUTE', 'Q1'),
+  ('cis-quant-q1q2', 'ATTRIBUTE', 'Q2');
 
 -- Race and Racism Education Requirements
 INSERT INTO public.degree_requirements (id, degree_code, category, name, required_count, priority)
 VALUES 
-  ('race-r1', 'bs-computer-science', 'Race and Racism Education Requirements', 'Race and Racism Education (R1)', 1, 130),
-  ('race-r1r2', 'bs-computer-science', 'Race and Racism Education Requirements', 'Race and Racism Education (R1 or R2)', 1, 131);
+  ('cis-race-r1', 'bs-computer-information-systems', 'Race and Racism Education Requirements', 'Race and Racism Education (R1)', 1, 130),
+  ('cis-race-r1r2', 'bs-computer-information-systems', 'Race and Racism Education Requirements', 'Race and Racism Education (R1 or R2)', 1, 131);
 
 INSERT INTO public.requirement_criteria (requirement_id, type, attribute)
 VALUES 
-  ('race-r1', 'ATTRIBUTE', 'R1'),
-  ('race-r1r2', 'ATTRIBUTE', 'R1'), ('race-r1r2', 'ATTRIBUTE', 'R2');
+  ('cis-race-r1', 'ATTRIBUTE', 'R1'),
+  ('cis-race-r1r2', 'ATTRIBUTE', 'R1'),
+  ('cis-race-r1r2', 'ATTRIBUTE', 'R2');
 
 --------------------------------------------------------------------------------
 -- 7. AT SOME DISTANCE (ASD) - Priority: 999
 -- Catch-all for anything not consumed above.
 --------------------------------------------------------------------------------
 INSERT INTO public.degree_requirements (id, degree_code, category, name, required_count, priority)
-VALUES ('asd-bucket', 'bs-computer-science', 'At Some Distance Requirements', 'At Some Distance', 4, 999);
+VALUES ('cis-asd-bucket', 'bs-computer-information-systems', 'At Some Distance Requirements', 'At Some Distance', 4, 999);
 
 INSERT INTO public.requirement_criteria (requirement_id, type)
-VALUES ('asd-bucket', 'CATCH_ALL');
+VALUES ('cis-asd-bucket', 'CATCH_ALL');
