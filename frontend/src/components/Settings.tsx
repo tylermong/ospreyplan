@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
-import { useRouter } from "next/navigation";
 import { useUser } from "@/providers/UserProvider";
 import { 
     Card, 
@@ -40,7 +39,6 @@ let cachedDegree: string | null = null;
 
 export default function Settings({ initialSettings }: { initialSettings?: { degree?: string } | null }) {
   const { setTheme, theme } = useTheme();
-  const router = useRouter();
   const { user, loading: userLoading } = useUser();
 
   const [deleting, setDeleting] = useState(false);
