@@ -14,7 +14,7 @@ async function getUser(): Promise<User | null> {
       email: data.user_metadata.email,
       avatar: data.user_metadata.avatar_url,
     };
-  } catch (e) {
+  } catch {
     // If auth fails on server, we pass null. Client might try again or redirect.
     return null;
   }
