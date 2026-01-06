@@ -65,7 +65,7 @@ export default function LoginCard() {
   };
 
   return (
-    <Card className="w-full max-w-md text-center">
+    <Card className="w-full max-w-md mx-8 text-center">
       <CardHeader>
         <CardTitle>Welcome to OspreyPlan</CardTitle>
         <CardDescription>
