@@ -216,7 +216,7 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full">
+        <Button variant="outline" className="w-full cursor-pointer">
           Add course
         </Button>
       </DialogTrigger>
@@ -281,10 +281,10 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handleCancel}>
+            <Button variant="outline" onClick={handleCancel} className="cursor-pointer">
               Cancel
             </Button>
-            <Button onClick={handleAddCourse} disabled={!selectedCourse || !isCreditsValid}>
+            <Button onClick={handleAddCourse} disabled={!selectedCourse || !isCreditsValid} className="cursor-pointer">
               Add course
             </Button>
           </DialogFooter>
@@ -308,7 +308,7 @@ const CourseRow = React.memo(React.forwardRef<HTMLDivElement, {
             ? "bg-primary text-primary-foreground border-primary shadow-sm hover:bg-primary/90"
             : "bg-card hover:bg-accent border-border hover:border-border";
           return cn(
-            "w-full text-left rounded-[var(--radius)] border transform transition duration-300 ease-in-out will-change-transform",
+            "w-full text-left rounded-[var(--radius)] border transform transition duration-300 ease-in-out will-change-transform cursor-pointer",
             visual
           );
         })()}

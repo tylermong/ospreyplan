@@ -50,7 +50,7 @@ export function CourseItem({
         size="icon"
         variant="ghost"
         onClick={onRemove}
-        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+        className="h-6 w-6 text-muted-foreground hover:text-destructive cursor-pointer"
         aria-label="Remove course"
         title="Remove course"
       >

@@ -179,14 +179,14 @@ export default function Settings() {
                         void saveSettings({ degree: val });
                     }}
                 >
-                    <SelectTrigger>
+                    <SelectTrigger className="cursor-pointer">
                         <SelectValue placeholder="Select degree" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectGroup>
                             <SelectLabel>Degrees</SelectLabel>
-                            <SelectItem value="bs-computer-science">B.S. Computer Science</SelectItem>
-                            <SelectItem value="bs-computer-information-systems">B.S. Information Systems</SelectItem>
+                            <SelectItem value="bs-computer-science" className="cursor-pointer">B.S. Computer Science</SelectItem>
+                            <SelectItem value="bs-computer-information-systems" className="cursor-pointer">B.S. Information Systems</SelectItem>
                         </SelectGroup>
                     </SelectContent>
                 </Select>
@@ -204,13 +204,13 @@ export default function Settings() {
             <div className="space-y-2">
                 <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Theme</label>
                 <Select value={theme} onValueChange={setTheme}>
-                    <SelectTrigger>
+                    <SelectTrigger className="cursor-pointer">
                         <SelectValue placeholder="Select theme" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="light">Light</SelectItem>
-                        <SelectItem value="dark">Dark</SelectItem>
-                        <SelectItem value="system">System</SelectItem>
+                        <SelectItem value="light" className="cursor-pointer">Light</SelectItem>
+                        <SelectItem value="dark" className="cursor-pointer">Dark</SelectItem>
+                        <SelectItem value="system" className="cursor-pointer">System</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -226,7 +226,7 @@ export default function Settings() {
         <CardContent className="pt-0">
           <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="justify-start">
+              <Button variant="destructive" className="justify-start cursor-pointer">
                 Delete Account
               </Button>
             </AlertDialogTrigger>
@@ -239,13 +239,13 @@ export default function Settings() {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel disabled={deleting} className="cursor-pointer">Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={(e) => {
                     e.preventDefault();
                     void handleDeleteAccount();
                   }}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
                   disabled={deleting}
                 >
                   {deleting ? "Deleting..." : "Delete Account"}

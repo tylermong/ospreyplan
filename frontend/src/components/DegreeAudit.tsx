@@ -5,6 +5,11 @@ import { DegreeAuditResponse, DegreeAuditResult } from "@/types/audit.types";
 import { AuditProgress } from "./AuditProgress";
 import { AuditRequirementCard } from "./AuditRequirementCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface DegreeAuditProps {
   userId: string;
@@ -88,7 +93,21 @@ export function DegreeAudit({ userId, refreshTrigger, totalCredits }: DegreeAudi
     <div className={`space-y-6 transition-opacity duration-200 ${isUpdating ? 'opacity-70' : 'opacity-100'}`}>
       <div className="flex justify-between items-end">
           <h3 className="text-lg font-medium text-muted-foreground">
-            Audit for: <span className="text-foreground font-semibold">{degreeName}</span>
+            Audit for:{" "}
+            {degreeName === "No Degree Selected" ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-foreground font-semibold decoration-dotted underline decoration-muted-foreground/50 hover:decoration-foreground cursor-help underline-offset-4">
+                    {degreeName}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Select a degree in settings</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <span className="text-foreground font-semibold">{degreeName}</span>
+            )}
             {isUpdating && <span className="ml-2 text-xs animate-pulse">Updating...</span>}
           </h3>
       </div>

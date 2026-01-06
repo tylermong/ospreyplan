@@ -79,7 +79,7 @@ export function SemesterCard({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-md px-2 py-1 text-sm flex items-center gap-2"
+                    className="rounded-md px-2 py-1 text-sm flex items-center gap-2 cursor-pointer"
                   >
                     <span>{draftTerm}</span>
                     <ChevronDown className="size-4" />
@@ -90,6 +90,7 @@ export function SemesterCard({
                     <DropdownMenuItem
                       key={t}
                       onSelect={() => onSetDraftTerm(t)}
+                      className="cursor-pointer"
                     >
                       {t}
                     </DropdownMenuItem>
@@ -102,7 +103,7 @@ export function SemesterCard({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-md px-2 py-1 text-sm flex items-center gap-2"
+                    className="rounded-md px-2 py-1 text-sm flex items-center gap-2 cursor-pointer"
                   >
                     <span>{draftYear}</span>
                     <ChevronDown className="size-4" />
@@ -116,6 +117,7 @@ export function SemesterCard({
                     <DropdownMenuItem
                       key={y}
                       onSelect={() => onSetDraftYear(y)}
+                      className="cursor-pointer"
                     >
                       {y}
                     </DropdownMenuItem>
@@ -130,10 +132,10 @@ export function SemesterCard({
         <CardAction className="row-span-1 self-center flex items-center gap-2">
           {isEditing ? (
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={onCommitRename}>
+              <Button size="sm" variant="outline" onClick={onCommitRename} className="cursor-pointer">
                 Save
               </Button>
-              <Button size="sm" variant="ghost" onClick={onCancelRename}>
+              <Button size="sm" variant="ghost" onClick={onCancelRename} className="cursor-pointer">
                 Cancel
               </Button>
             </div>
@@ -145,6 +147,7 @@ export function SemesterCard({
                 onClick={onStartRenaming}
                 aria-label="Rename semester"
                 title="Rename"
+                className="cursor-pointer"
               >
                 <Pencil />
               </Button>
@@ -155,6 +158,7 @@ export function SemesterCard({
                 onClick={onDelete}
                 title="Delete semester"
                 aria-label="Delete semester"
+                className="cursor-pointer"
               >
                 <X size={16} />
               </Button>

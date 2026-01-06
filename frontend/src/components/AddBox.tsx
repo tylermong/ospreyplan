@@ -21,6 +21,7 @@ export default function AddBox({ label, onClick, className }: Readonly<AddBoxPro
         // Interactive states
         "hover:border-foreground/60 transition-colors",
         "focus-visible:ring-[3px] focus-visible:ring-ring/50 outline-none",
+        "cursor-pointer",
         className
       )}
     >
