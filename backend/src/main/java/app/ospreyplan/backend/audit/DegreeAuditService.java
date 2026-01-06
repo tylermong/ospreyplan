@@ -290,7 +290,7 @@ public class DegreeAuditService {
                             .filter(c -> c.getGroupId() == null)
                             .forEach(c -> descriptions.add(generateMissingCriteriaDescription(c)));
 
-                    String criteriaDesc = String.join(" / ", descriptions);
+                    String criteriaDesc = String.join(", ", descriptions);
 
                     for (int j = 0; j < missingCount; j++) {
                         result.getMissingCriteria().add(criteriaDesc);
