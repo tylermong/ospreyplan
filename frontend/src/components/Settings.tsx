@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/providers/UserProvider";
 import { 
     Card, 
     CardContent, 
@@ -33,60 +34,58 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default function Settings() {
+let cachedDegree: string | null = null;
+
+export default function Settings({ initialSettings }: { initialSettings?: { degree?: string } | null }) {
   const { setTheme, theme } = useTheme();
   const router = useRouter();
+  const { user, loading: userLoading } = useUser();
 
   const [deleting, setDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  // 1. Profile State
-  const [profile, setProfile] = useState<{ name: string; email: string; avatar: string } | null>(null);
-  
-  // 2. Academic State
-  const [degree, setDegree] = useState<string | null>(null);
-  
-  const [loading, setLoading] = useState(true);
+  // Academic State
+  const [degree, setDegree] = useState<string | null>(initialSettings?.degree ?? cachedDegree);
+  const [loadingDegree, setLoadingDegree] = useState(!initialSettings && !cachedDegree);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (initialSettings) {
+        cachedDegree = initialSettings.degree ?? null;
+        setLoadingDegree(false);
+        return;
+    }
+    if (cachedDegree) {
+        setLoadingDegree(false);
+        return;
+    }
+
     let mounted = true;
     const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
     async function fetchData() {
       try {
-        // Fetch Profile (Reuse your /auth/me endpoint)
-        const authRes = await fetch(`${apiBase}/auth/me`, { credentials: "include" });
-        if (authRes.ok) {
-          const user = await authRes.json();
-          if (mounted) {
-            setProfile({
-              name: user.user_metadata.full_name,
-              email: user.user_metadata.email,
-              avatar: user.user_metadata.avatar_url,
-            });
-          }
-        }
-
         // Fetch Settings
         const settingsRes = await fetch(`${apiBase}/api/settings`, { credentials: "include" });
         if (settingsRes.ok) {
           const body = await settingsRes.json();
           if (mounted) {
             setDegree(body.degree ?? null);
+            cachedDegree = body.degree ?? null;
           }
         }
       } catch {
-        if (mounted) setError("Failed to load account data.");
+        if (mounted) setError("Failed to load settings.");
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) setLoadingDegree(false);
       }
     }
 
     fetchData();
     return () => { mounted = false; };
-  }, []);
+  }, [initialSettings]);
 
   async function saveSettings(updates: { degree?: string | null; startYear?: number | null }) {
     const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
@@ -101,6 +100,7 @@ export default function Settings() {
             credentials: "include",
             body: JSON.stringify(payload),
         });
+        cachedDegree = payload.degree ?? null;
     } catch {
         setError("Failed to save changes.");
     }
@@ -119,7 +119,7 @@ export default function Settings() {
         
         if (res.ok) {
             setDeleteDialogOpen(false);
-            router.push("/");
+            window.location.href = "/"; // Force hard reload to clear context
             return;
         }
         setError("Failed to delete account. Please try again.");
@@ -132,7 +132,35 @@ export default function Settings() {
     }
   }
 
-  if (loading) return <div className="p-8">Loading settings...</div>;
+  if (userLoading || loadingDegree) {
+    return (
+      <div className="space-y-6 max-w-3xl">
+        <div>
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-4 w-full max-w-md" />
+        </div>
+        <Separator />
+        
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardHeader>
+              <Skeleton className="h-6 w-32 mb-2" />
+              <Skeleton className="h-4 w-64" />
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-6">
+                {i === 1 && <Skeleton className="h-20 w-20 rounded-full" />}
+                <div className="space-y-2 w-full">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-10 w-full max-w-sm" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -153,12 +181,12 @@ export default function Settings() {
         </CardHeader>
         <CardContent className="flex items-center gap-6">
           <Avatar className="h-20 w-20">
-            <AvatarImage src={profile?.avatar} />
-            <AvatarFallback>{profile?.name?.substring(0,2).toUpperCase() ?? "OP"}</AvatarFallback>
+            <AvatarImage src={user?.avatar} />
+            <AvatarFallback>{user?.name?.substring(0,2).toUpperCase() ?? "OP"}</AvatarFallback>
           </Avatar>
           <div className="space-y-1">
-            <h4 className="font-medium text-lg">{profile?.name || "Guest User"}</h4>
-            <p className="text-sm text-muted-foreground">{profile?.email}</p>
+            <h4 className="font-medium text-lg">{user?.name || "Guest User"}</h4>
+            <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
         </CardContent>
       </Card>

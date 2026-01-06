@@ -9,9 +9,19 @@ import { toast } from "sonner";
 
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
-export function usePlannerApi() {
-  const [semesters, setSemesters] = useState<Semester[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
+export function usePlannerApi(
+  initialSemesters?: BackendSemester[] | null,
+  initialUserId?: string | null
+) {
+  const [semesters, setSemesters] = useState<Semester[]>(() => {
+    if (initialSemesters) {
+      const mapped = mapBackendSemesters(initialSemesters);
+      return recomputePrereqStatuses(mapped);
+    }
+    return [];
+  });
+  const [userId, setUserId] = useState<string | null>(initialUserId || null);
+  const [loading, setLoading] = useState(!initialSemesters);
   const [showCreditWarning, setShowCreditWarning] = useState(false);
   const [pendingCourse, setPendingCourse] = useState<{
     semesterId: string;
@@ -21,6 +31,22 @@ export function usePlannerApi() {
   } | null>(null);
 
   useEffect(() => {
+    if (initialSemesters) {
+        // We have initial data, but we might need to check for missing prereqs (catalog fetch)
+        // We do this in a non-blocking way
+        resolveMissingPrereqs(mapBackendSemesters(initialSemesters)).then((final) => {
+             setSemesters(recomputePrereqStatuses(final));
+        });
+        setLoading(false);
+        if (!initialUserId) {
+            // Should not happen if initialSemesters is present, but just in case
+            fetch(`${API_BASE}/auth/me`, { method: "GET", credentials: "include" })
+                .then(r => r.ok ? r.json() : null)
+                .then(u => { if(u?.id) setUserId(u.id); });
+        }
+        return;
+    }
+
     fetch(`${API_BASE}/auth/me`, { method: "GET", credentials: "include" })
       .then(async (res) => {
         let parsed = null;
@@ -39,141 +65,20 @@ export function usePlannerApi() {
           })
             .then((r) => r.json())
             .then(async (data: BackendSemester[]) => {
-              const mapped: Semester[] = (data || []).map((s) => ({
-                id: s.id,
-                title: s.title,
-                term: s.title.split(" ")[0] ?? "Fall",
-                year: Number(s.title.split(" ")[1]) || new Date().getFullYear(),
-                courses: (s.plannedCourses || []).map((c) => ({
-                  id: c.id,
-                  name: `${c.subject} ${c.courseNumber}`,
-                  credits: c.credits,
-                  prerequisite:
-                    c.prerequisite === undefined || c.prerequisite === null
-                      ? null
-                      : typeof c.prerequisite === "string"
-                      ? c.prerequisite
-                      : JSON.stringify(c.prerequisite),
-                })),
-              }));
-
-              const missingKeys = new Map<
-                string,
-                { subject: string; courseNumber: number }
-              >();
-              for (const sem of mapped) {
-                for (const pc of sem.courses) {
-                  if (!pc.prerequisite) {
-                    const match = pc.name.match(/^([A-Za-z]+)\s+(\d{3,4})/);
-                    if (match) {
-                      const subj = match[1].toUpperCase();
-                      const num = Number(match[2]);
-                      const key = `${subj} ${num}`;
-                      if (!missingKeys.has(key))
-                        missingKeys.set(key, {
-                          subject: subj,
-                          courseNumber: num,
-                        });
-                    }
-                  }
-                }
-              }
-
-              if (missingKeys.size > 0) {
-                try {
-                  const catalogResp = await fetch(`${API_BASE}/api/courses`, {
-                    credentials: "include",
-                  }).catch(() => null);
-                  const catalog =
-                    catalogResp && catalogResp.ok
-                      ? await catalogResp.json().catch(() => null)
-                      : null;
-
-                  type CatalogItem = {
-                    courseId?: { subject?: string; courseNumber?: number };
-                    subject?: string;
-                    courseNumber?: number;
-                    name?: string;
-                    prerequisite?: string | null;
-                  };
-                  const catalogIndex = new Map<string, CatalogItem>();
-                  if (Array.isArray(catalog)) {
-                    for (const rawItem of catalog) {
-                      const item = rawItem as CatalogItem;
-                      let subj: string | null = null;
-                      let num: number | null = null;
-                      if (
-                        item.courseId &&
-                        (item.courseId.subject ||
-                          item.courseId.courseNumber !== undefined)
-                      ) {
-                        subj = String(item.courseId.subject).toUpperCase();
-                        num = Number(item.courseId.courseNumber);
-                      } else if (
-                        item.subject ||
-                        item.courseNumber !== undefined
-                      ) {
-                        subj = String(item.subject).toUpperCase();
-                        num = Number(item.courseNumber);
-                      } else if (typeof item.name === "string") {
-                        const m = item.name.match(/^([A-Za-z]+)\s+(\d{3,4})/);
-                        if (m) {
-                          subj = m[1].toUpperCase();
-                          num = Number(m[2]);
-                        }
-                      }
-                      if (subj && num !== null && !Number.isNaN(num)) {
-                        catalogIndex.set(`${subj} ${num}`, item);
-                      }
-                    }
-                  }
-
-                  const prereqByKey = new Map<string, string | null>();
-                  for (const key of missingKeys.keys()) {
-                    const found = catalogIndex.get(key);
-                    if (found) {
-                      const val =
-                        found.prerequisite === null ||
-                        found.prerequisite === undefined
-                          ? null
-                          : typeof found.prerequisite === "string"
-                          ? found.prerequisite
-                          : JSON.stringify(found.prerequisite);
-                      prereqByKey.set(key, val);
-                    } else {
-                      prereqByKey.set(key, null);
-                    }
-                  }
-
-                  const merged = mapped.map((sem) => ({
-                    ...sem,
-                    courses: sem.courses.map((c) => {
-                      if (c.prerequisite) return c;
-                      const m = c.name.match(/^([A-Za-z]+)\s+(\d{3,4})/);
-                      if (!m) return c;
-                      const key = `${m[1].toUpperCase()} ${Number(m[2])}`;
-                      const prereq = prereqByKey.has(key)
-                        ? prereqByKey.get(key) ?? null
-                        : null;
-
-                      return { ...c, prerequisite: prereq };
-                    }),
-                  }));
-
-                  setSemesters(recomputePrereqStatuses(merged));
-                } catch {
-                  console.warn("Failed to fetch course prerequisites");
-                  setSemesters(recomputePrereqStatuses(mapped));
-                }
-              } else {
-                setSemesters(recomputePrereqStatuses(mapped));
-              }
+              const mapped = mapBackendSemesters(data);
+              const final = await resolveMissingPrereqs(mapped);
+              setSemesters(recomputePrereqStatuses(final));
             })
-            .catch(() => console.error("failed to load semesters"));
+            .catch(() => console.error("failed to load semesters"))
+            .finally(() => setLoading(false));
+        } else {
+          setLoading(false);
         }
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => {
+        setLoading(false);
+      });
+  }, [initialSemesters, initialUserId]);
 
   function addSemester() {
     if (!userId) {
@@ -486,6 +391,7 @@ export function usePlannerApi() {
   return {
     semesters,
     userId,
+    loading,
     showCreditWarning,
     pendingCourse,
     addSemester,
@@ -497,4 +403,121 @@ export function usePlannerApi() {
     cancelAddCourse,
     setShowCreditWarning,
   };
+}
+
+function mapBackendSemesters(data: BackendSemester[]): Semester[] {
+  return (data || []).map((s) => ({
+    id: s.id,
+    title: s.title,
+    term: s.title.split(" ")[0] ?? "Fall",
+    year: Number(s.title.split(" ")[1]) || new Date().getFullYear(),
+    courses: (s.plannedCourses || []).map((c) => ({
+      id: c.id,
+      name: `${c.subject} ${c.courseNumber}`,
+      credits: c.credits,
+      prerequisite:
+        c.prerequisite === undefined || c.prerequisite === null
+          ? null
+          : typeof c.prerequisite === "string"
+          ? c.prerequisite
+          : JSON.stringify(c.prerequisite),
+    })),
+  }));
+}
+
+async function resolveMissingPrereqs(mapped: Semester[]): Promise<Semester[]> {
+  const missingKeys = new Map<string, { subject: string; courseNumber: number }>();
+  for (const sem of mapped) {
+    for (const pc of sem.courses) {
+      if (!pc.prerequisite) {
+        const match = pc.name.match(/^([A-Za-z]+)\s+(\d{3,4})/);
+        if (match) {
+          const subj = match[1].toUpperCase();
+          const num = Number(match[2]);
+          const key = `${subj} ${num}`;
+          if (!missingKeys.has(key))
+            missingKeys.set(key, { subject: subj, courseNumber: num });
+        }
+      }
+    }
+  }
+
+  if (missingKeys.size === 0) return mapped;
+
+  try {
+    const catalogResp = await fetch(`${API_BASE}/api/courses`, {
+      credentials: "include",
+    }).catch(() => null);
+    const catalog =
+      catalogResp && catalogResp.ok
+        ? await catalogResp.json().catch(() => null)
+        : null;
+
+    type CatalogItem = {
+      courseId?: { subject?: string; courseNumber?: number };
+      subject?: string;
+      courseNumber?: number;
+      name?: string;
+      prerequisite?: string | null;
+    };
+    const catalogIndex = new Map<string, CatalogItem>();
+    if (Array.isArray(catalog)) {
+      for (const rawItem of catalog) {
+        const item = rawItem as CatalogItem;
+        let subj: string | null = null;
+        let num: number | null = null;
+        if (
+          item.courseId &&
+          (item.courseId.subject || item.courseId.courseNumber !== undefined)
+        ) {
+          subj = String(item.courseId.subject).toUpperCase();
+          num = Number(item.courseId.courseNumber);
+        } else if (item.subject || item.courseNumber !== undefined) {
+          subj = String(item.subject).toUpperCase();
+          num = Number(item.courseNumber);
+        } else if (typeof item.name === "string") {
+          const m = item.name.match(/^([A-Za-z]+)\s+(\d{3,4})/);
+          if (m) {
+            subj = m[1].toUpperCase();
+            num = Number(m[2]);
+          }
+        }
+        if (subj && num !== null && !Number.isNaN(num)) {
+          catalogIndex.set(`${subj} ${num}`, item);
+        }
+      }
+    }
+
+    const prereqByKey = new Map<string, string | null>();
+    for (const key of missingKeys.keys()) {
+      const found = catalogIndex.get(key);
+      if (found) {
+        const val =
+          found.prerequisite === null || found.prerequisite === undefined
+            ? null
+            : typeof found.prerequisite === "string"
+            ? found.prerequisite
+            : JSON.stringify(found.prerequisite);
+        prereqByKey.set(key, val);
+      } else {
+        prereqByKey.set(key, null);
+      }
+    }
+
+    const merged = mapped.map((sem) => ({
+      ...sem,
+      courses: sem.courses.map((c) => {
+        if (c.prerequisite) return c;
+        const m = c.name.match(/^([A-Za-z]+)\s+(\d{3,4})/);
+        if (!m) return c;
+        const key = `${m[1].toUpperCase()} ${Number(m[2])}`;
+        const prereq = prereqByKey.has(key) ? prereqByKey.get(key) ?? null : null;
+        return { ...c, prerequisite: prereq };
+      }),
+    }));
+    return merged;
+  } catch (err) {
+    console.warn("Failed to resolve missing prereqs", err);
+    return mapped;
+  }
 }

@@ -16,16 +16,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SemesterCard } from "./SemesterCard";
 import { usePlannerApi } from "@/hooks/usePlannerApi";
 import { calculateTotalCredits } from "@/lib/planner-utils";
-import { Course } from "@/types/planner.types";
+import { Course, BackendSemester } from "@/types/planner.types";
 import { DegreeAudit } from "./DegreeAudit";
 
-export default function Planner() {
+interface PlannerProps {
+  initialSemesters?: BackendSemester[] | null;
+  initialUserId?: string | null;
+}
+
+export default function Planner({ initialSemesters, initialUserId }: PlannerProps) {
   const {
     semesters,
     userId,
+    loading,
     showCreditWarning,
     pendingCourse,
     addSemester,
@@ -36,7 +43,7 @@ export default function Planner() {
     confirmAddCourse,
     cancelAddCourse,
     setShowCreditWarning,
-  } = usePlannerApi();
+  } = usePlannerApi(initialSemesters, initialUserId);
   const [editingSemesterId, setEditingSemesterId] = useState<string | null>(
     null
   );
@@ -132,6 +139,55 @@ export default function Planner() {
       return acc + s.courses.reduce((sum, c) => sum + c.credits, 0);
     }, 0);
   }, [semesters]);
+
+  if (loading) {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-6 rounded" />
+                    <Skeleton className="h-4 w-20" />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-6 rounded" />
+                    <Skeleton className="h-4 w-20" />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-6 rounded" />
+                    <Skeleton className="h-4 w-32" />
+                </div>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="rounded-xl border bg-card text-card-foreground shadow-sm h-60 p-6 space-y-4">
+                        <div className="flex justify-between items-center">
+                            <Skeleton className="h-6 w-32" />
+                            <div className="flex gap-2">
+                                <Skeleton className="h-8 w-8" />
+                                <Skeleton className="h-8 w-8" />
+                            </div>
+                        </div>
+                        <div className="space-y-3">
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="mt-12 border-t pt-8">
+                <Skeleton className="h-8 w-48 mb-6" />
+                <div className="space-y-4">
+                    <Skeleton className="h-8 w-full" />
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <Skeleton className="h-32" />
+                        <Skeleton className="h-32" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
