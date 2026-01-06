@@ -66,7 +66,7 @@ Whether you're a freshman mapping out your first year or a senior finalizing you
 - Supabase - Managed PostgreSQL database with Row Level Security (RLS)
 - Google OAuth 2.0 + PKCE - Secure, passwordless authentication via Stockton Google accounts
 - Vercel - Frontend hosting
-- Railway - Backend hosting
+- Render - Backend hosting
 
 ### Architecture Highlights
 
