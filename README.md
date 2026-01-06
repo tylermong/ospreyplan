@@ -7,6 +7,7 @@ OspreyPlan is a degree planning platform built specifically for Stockton student
 OspreyPlan takes the complexity out of course planning by:
 - Visualizing your entire degree in a semester-by-semester layout
 - Tracking prerequisites automatically with visual indicators showing which courses unlock others
+- Verifying your plan against official degree requirements with a built-in Degree Audit
 - Preventing scheduling conflicts by validating prerequisite requirements in real-time
 - Managing credit hours with warnings when semesters exceed recommended limits
 - Syncing your plan across devices with secure cloud storage
@@ -21,9 +22,17 @@ Whether you're a freshman mapping out your first year or a senior finalizing you
 4. Navigate to the Planner page to start building your semester schedule:
    - Click "Add semester" to create a new term (Spring, Summer, Fall, or Winter)
    - Click "+" in any semester to search and add courses
+   - View your Degree Audit at the bottom of the page to track real-time progress towards graduation
    - Courses with unmet prerequisites appear with a red indicator (plan accordingly!)
 
 ## 🎯 Key Features
+
+### Degree Audit Integration
+
+- **Real-time Progress Tracking**: Automatically checks your planned courses against degree requirements
+- **Visual Status**: Clear visual indicators for satisfied requirements (green) and missing credits (red)
+- **Categorized Breakdown**: View progress by category (Major Requirements, Cognates, General Studies, etc.)
+- **Gap Analysis**: Instantly see exactly what courses or attributes (e.g., "W2", "Q2") are missing from your plan
 
 ### Smart Prerequisite Tracking
 
@@ -34,6 +43,7 @@ Whether you're a freshman mapping out your first year or a senior finalizing you
 ### Flexible Planning
 
 - Multi-semester view: Easily view your full academic plan with several semesters displayed at once
+- Variable credit support: Select specific credit values for courses with variable ranges
 - Custom semester naming: Set any term and year combination you need for complete flexibility
 - Credit hour tracking: Automatic totals for each semester with warnings when exceeding 18 credits
 - Easy course management: Add, remove, or rearrange courses with simple clicks
@@ -48,7 +58,7 @@ Whether you're a freshman mapping out your first year or a senior finalizing you
 
 ### Frontend
 
-- Next.js 15.4.4 with React 19.1.0 - Modern full-stack React framework with App Router
+- Next.js 15.4.10 with React 19.1.0 - Modern full-stack React framework with App Router
 - TypeScript 5.0 - Type-safe development
 - Tailwind CSS v4.0 - Utility-first CSS framework
 - shadcn/ui - Accessible component library built on Radix UI
