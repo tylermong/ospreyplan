@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import { CalendarDays, Settings } from "lucide-react";
 import { NavItems } from "@/components/nav-items";
 import { NavUser } from "@/components/nav-user";
@@ -22,6 +23,13 @@ const items = [
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [user, setUser] = React.useState<{ name: string; email: string; avatar: string; } | null>(null);
 
   React.useEffect(() => {
@@ -61,13 +69,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
                 <Link href="/planner" className="flex items-center gap-2">
-                <Image
-                  src="/ospreyplan-black-transparent.png"
-                  alt="OspreyPlan"
-                  width={32}
-                  height={32}
-                  priority
-                />
+                {mounted ? (
+                  <Image
+                    src={
+                      resolvedTheme === "dark"
+                        ? "/ospreyplan-white-transparent.png"
+                        : "/ospreyplan-black-transparent.png"
+                    }
+                    alt="OspreyPlan"
+                    width={32}
+                    height={32}
+                    priority
+                  />
+                ) : (
+                  <div className="w-8 h-8" /> // Placeholder to prevent layout shift
+                )}
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-bold text-xl">OspreyPlan</span>
                 </div>
