@@ -1,0 +1,2 @@
+# Exclude auto-generated UI components from GitHub language statistics
+frontend/src/components/ui/*.tsx linguist-detectable=false
