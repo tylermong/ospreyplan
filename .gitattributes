@@ -1,2 +1,2 @@
-# Exclude auto-generated UI components from GitHub language statistics
-*.tsx linguist-detectable=false
+# Ignore all files and subdirectories within the components folder
+frontend/src/components/** linguist-detectable=false
