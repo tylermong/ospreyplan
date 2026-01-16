@@ -1,8 +1,12 @@
 package app.ospreyplan.backend.auth;
 
+import app.ospreyplan.backend.planner.semester.PlannedSemester;
 import app.ospreyplan.backend.planner.semester.PlannedSemesterRepository;
+import app.ospreyplan.backend.planner.course.PlannedCourse;
+import app.ospreyplan.backend.usersettings.UserSettings;
 import app.ospreyplan.backend.usersettings.UserSettingsRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -24,6 +28,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
@@ -119,6 +124,94 @@ public class AuthController
                 .collect(Collectors.toUnmodifiableSet());
 
         logger.debug("Configured allowed domains: {}", allowedDomainSet);
+    }
+
+    @PostMapping("/demo-login")
+    public ResponseEntity<Map<String, Object>> demoLogin() {
+        UUID demoUserId = UUID.randomUUID();
+        String demoEmail = "demo-" + demoUserId + "@demo.app";
+
+        // 1. Create UserSettings
+        UserSettings user = new UserSettings();
+        user.setId(demoUserId);
+        user.setEmail(demoEmail);
+        user.setFullName("Demo User");
+        user.setDegree("bs-computer-science"); // Pre-select degree
+        user.setStartYear(java.time.Year.now().getValue());
+        user.setProfilePictureUrl("https://ui-avatars.com/api/?name=Demo+User&background=random");
+        try {
+             userSettingsRepository.save(user);
+        } catch (Exception e) {
+             logger.error("Failed to save demo user", e);
+             return ResponseEntity.status(500).body(Map.of("error", "Failed to create demo user"));
+        }
+
+        // 2. Preload Planner Data (Semesters & Courses)
+        // We'll add 2 planned semesters for Year 1
+        createDemoSemester(demoUserId, "Fall " + user.getStartYear(), 
+            List.of(
+                createCourse("CSCI", 2101, 4),  // Programming I
+                createCourse("MATH", 2215, 5),  // Calc I
+                createCourse("GAH", 2126, 4)    // General Arts
+            )
+        );
+        
+        createDemoSemester(demoUserId, "Spring " + (user.getStartYear() + 1), 
+            List.of(
+                createCourse("CSCI", 2102, 4),  // Programming II
+                createCourse("MATH", 2216, 5)   // Calc II
+            )
+        );
+
+        // 3. Issue Token
+        String accessToken = Jwts.builder()
+                .setSubject(demoUserId.toString())
+                .claim("email", demoEmail)
+                .claim("role", "authenticated")
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 24h
+                .signWith(Keys.hmacShaKeyFor(supabaseJwtSecret.getBytes(StandardCharsets.UTF_8)), SignatureAlgorithm.HS256)
+                .compact();
+        
+        // Refresh token (just another jwt or uuid)
+        String refreshToken = UUID.randomUUID().toString();
+
+       // 4. Set Cookies
+        boolean secureCookie = backendBaseUrl != null && backendBaseUrl.startsWith("https://");
+
+        ResponseCookie accessCookie = ResponseCookie.from(ACCESS_COOKIE_NAME, accessToken).httpOnly(true)
+                .secure(secureCookie).sameSite("Lax").path("/").maxAge(86400).domain(cookieDomain).build();
+
+        ResponseCookie refreshCookie = ResponseCookie.from(REFRESH_COOKIE_NAME, refreshToken).httpOnly(true)
+                .secure(secureCookie).sameSite("Lax").path("/").domain(cookieDomain).build();
+
+        HttpHeaders setCookieHeaders = new HttpHeaders();
+        setCookieHeaders.add(HttpHeaders.SET_COOKIE, accessCookie.toString());
+        setCookieHeaders.add(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+        return new ResponseEntity<>(Map.of("status", "ok"), setCookieHeaders, HttpStatus.OK);
+    }
+
+    private void createDemoSemester(UUID userId, String title, List<PlannedCourse> courses) {
+        PlannedSemester semester = new PlannedSemester();
+        semester.setUserId(userId);
+        semester.setTitle(title);
+        
+        // Link courses
+        for(PlannedCourse c : courses) {
+            c.setPlannedSemester(semester);
+        }
+        semester.setPlannedCourses(courses);
+
+        plannedSemesterRepository.save(semester);
+    }
+    
+    private PlannedCourse createCourse(String subject, int number, int credits) {
+        PlannedCourse c = new PlannedCourse();
+        c.setSubject(subject);
+        c.setCourseNumber(number);
+        c.setCredits(credits);
+        return c;
     }
 
     /**
@@ -476,6 +569,25 @@ public class AuthController
             ObjectMapper mapper = new ObjectMapper();
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(mapper.createObjectNode().put(ERROR_KEY, UNAUTHORIZED_MESSAGE));
+        }
+
+        // 1. Check for Demo User (local verification)
+        try {
+             var claims = Jwts.parserBuilder()
+                .setSigningKey(supabaseJwtSecret.getBytes(StandardCharsets.UTF_8))
+                .build()
+                .parseClaimsJws(accessToken)
+                .getBody();
+             String email = claims.get("email", String.class);
+             if(email != null && email.endsWith("@demo.app")) {
+                 ObjectMapper mapper = new ObjectMapper();
+                 var node = mapper.createObjectNode();
+                 node.put("id", claims.getSubject());
+                 node.put("email", email);
+                 return ResponseEntity.ok(node);
+             }
+        } catch (Exception e) {
+             // Not a valid self-signed token or not a demo user; proceed to Supabase verification
         }
 
         try

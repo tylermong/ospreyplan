@@ -33,6 +33,7 @@ async function generatePKCE() {
 
 export default function LoginCard() {
   const router = useRouter();
+  const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
     // Check whether the user is already authenticated. If so, redirect to the planner.
@@ -64,6 +65,27 @@ export default function LoginCard() {
     window.location.href = supabaseOAuthUrl;
   };
 
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
+      const res = await fetch(`${apiBase}/auth/demo-login`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        router.replace("/planner");
+      } else {
+        console.error("Demo login failed");
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Demo login error", error);
+      setLoading(false);
+    }
+  };
+
   return (
     <Card className="w-full max-w-md mx-8 text-center">
       <CardHeader>
@@ -73,9 +95,18 @@ export default function LoginCard() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Button variant="outline" className="w-full" onClick={handleLogin}>
-          Login
-        </Button>
+        <div className="flex flex-col gap-4">
+          <Button variant="outline" className="w-full" onClick={handleLogin}>
+            Login
+          </Button>
+          <button 
+            onClick={handleDemoLogin}
+            disabled={loading}
+            className="text-xs text-muted-foreground/50 hover:text-primary transition-colors hover:underline"
+          >
+            {loading ? "Setting up demo..." : "Not a Stockton student? Explore the Demo version"}
+          </button>
+        </div>
       </CardContent>
     </Card>
   );
