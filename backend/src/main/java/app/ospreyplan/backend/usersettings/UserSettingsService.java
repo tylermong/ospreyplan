@@ -7,6 +7,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class UserSettingsService
         this.repository = repository;
     }
 
+    @Transactional
     public UserSettingsDTO updateSettings(UserSettingsDTO dto, HttpServletRequest request)
     {
         UUID userId = getCurrentUserId(request);

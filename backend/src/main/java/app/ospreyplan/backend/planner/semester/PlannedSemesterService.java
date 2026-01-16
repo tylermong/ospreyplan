@@ -38,16 +38,23 @@ public class PlannedSemesterService
     }
 
     @Transactional
-    public PlannedCourse addCourseToSemester(UUID semesterId, String subject, Integer courseNumber, String section, Integer credits)
+    public PlannedCourse addCourseToSemester(UUID semesterId, String subject, Integer courseNumber, Integer credits)
     {
         PlannedSemester semester = semesterRepository.findById(semesterId)
                 .orElseThrow(() -> new IllegalArgumentException("Semester not found"));
+
+        boolean exists = semester.getPlannedCourses().stream()
+                .anyMatch(pc -> pc.getSubject().equals(subject) && pc.getCourseNumber().equals(courseNumber));
+
+        if (exists)
+        {
+            throw new IllegalArgumentException("Course " + subject + " " + courseNumber + " is already in this semester.");
+        }
 
         PlannedCourse course = new PlannedCourse();
         course.setPlannedSemester(semester);
         course.setSubject(subject);
         course.setCourseNumber(courseNumber);
-        course.setSection(section);
         course.setCredits(credits);
 
         semester.getPlannedCourses().add(course);
@@ -80,5 +87,15 @@ public class PlannedSemesterService
             throw new IllegalArgumentException("Semester not found: " + semesterId);
         }
         semesterRepository.deleteById(semesterId);
+    }
+
+    @Transactional
+    public void updateSemesterTitle(UUID semesterId, String title)
+    {
+        PlannedSemester semester = semesterRepository.findById(semesterId)
+                .orElseThrow(() -> new IllegalArgumentException("Semester not found: " + semesterId));
+
+        semester.setTitle(title);
+        semesterRepository.save(semester);
     }
 }

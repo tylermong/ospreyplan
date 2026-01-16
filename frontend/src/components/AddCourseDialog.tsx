@@ -12,19 +12,16 @@ interface Course {
   id: {
     subject: string;
     courseNumber: number;
-    section: string;
   };
   name: string;
-  credits: number;
-  capacity: number;
-  filled: number;
-  remaining: number;
-  term: number;
+  minCredits: number;
+  maxCredits: number;
   prerequisite?: string | null;
+  attributes?: string[];
 }
 
 interface AddCourseDialogProps {
-  readonly onAddCourse: (subject: string, courseNumber: number, section: string, credits: number, prerequisiteRaw: string | null | undefined) => void;
+  readonly onAddCourse: (subject: string, courseNumber: number, credits: number, prerequisiteRaw: string | null | undefined) => void;
 }
 
 let coursesCache: Course[] | null = null;
@@ -34,9 +31,9 @@ type FlattenedCourse = {
   key: string;
   subject: string;
   number: string;
-  section: string;
   name: string;
-  credits: number;
+  minCredits: number;
+  maxCredits: number;
   searchIndex: string;
   original: Course;
 };
@@ -56,28 +53,26 @@ async function fetchCoursesOnce(): Promise<Course[]> {
     const items: unknown[] = await res.json();
 
     type RawCourse = {
-      courseId: { subject: string; courseNumber: number; section: string };
-      credits?: number;
+      courseId: { subject: string; courseNumber: number };
+      minCredits?: number;
+      maxCredits?: number;
       name?: string;
       prerequisite?: string | null;
+      attributes?: string[];
       [k: string]: unknown;
     };
 
     const normalized = (items as RawCourse[]).map((it) => {
-      const extra = it as unknown as Record<string, unknown>;
       const course: Course = {
         id: {
           subject: it.courseId.subject,
           courseNumber: Number(it.courseId.courseNumber),
-          section: it.courseId.section,
         },
         name: it.name ?? "",
-        credits: Number(it.credits ?? 0),
-        capacity: Number((extra["capacity"] as number) ?? 0),
-        filled: Number((extra["filled"] as number) ?? 0),
-        remaining: Number((extra["remaining"] as number) ?? 0),
-        term: Number((extra["term"] as number) ?? 0),
-        prerequisite: (extra["prerequisite"] as string | null | undefined) ?? null,
+        minCredits: Number(it.minCredits ?? 0),
+        maxCredits: Number(it.maxCredits ?? 0),
+        prerequisite: it.prerequisite ?? null,
+        attributes: it.attributes ?? [],
       };
       return course;
     });
@@ -91,7 +86,7 @@ async function fetchCoursesOnce(): Promise<Course[]> {
 }
 
 function getCourseKey(c: Course): string {
-  return `${c.id.subject}-${c.id.courseNumber}-${c.id.section}`;
+  return `${c.id.subject}-${c.id.courseNumber}`;
 }
 
 async function ensureFlattenedCourses(): Promise<FlattenedCourse[]> {
@@ -101,24 +96,21 @@ async function ensureFlattenedCourses(): Promise<FlattenedCourse[]> {
   const sorted = [...normalized].sort((a, b) => {
     const subjectCmp = a.id.subject.localeCompare(b.id.subject);
     if (subjectCmp !== 0) return subjectCmp;
-    const numberCmp = Number(a.id.courseNumber) - Number(b.id.courseNumber);
-    if (numberCmp !== 0) return numberCmp;
-    return String(a.id.section).localeCompare(String(b.id.section));
+    return Number(a.id.courseNumber) - Number(b.id.courseNumber);
   });
 
   flattenedCache = sorted.map((c) => {
     const subject = c.id.subject;
     const number = String(c.id.courseNumber);
-    const section = c.id.section;
     const name = c.name;
-    const searchIndex = `${subject} ${number} ${section} ${name}`.toLowerCase();
+    const searchIndex = `${subject} ${number} ${name}`.toLowerCase();
     return {
       key: getCourseKey(c),
       subject,
       number,
-      section,
       name,
-      credits: c.credits,
+      minCredits: c.minCredits,
+      maxCredits: c.maxCredits,
       searchIndex,
       original: c,
     } as FlattenedCourse;
@@ -133,7 +125,7 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
   const [searchQuery, setSearchQuery] = React.useState("");
   const deferredSearch = React.useDeferredValue(searchQuery);
   const [loading, setLoading] = React.useState(false);
-  const [isPending, startTransition] = React.useTransition();
+  const [credits, setCredits] = React.useState<string>("");
 
   React.useEffect(() => {
     let cancelled = false;
@@ -172,22 +164,35 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
     return allFlattened.find((c) => c.key === selectedKey) ?? null;
   }, [selectedKey, allFlattened]);
 
-  const formatCourseName = React.useCallback((c: FlattenedCourse) => {
-    return `${c.subject} ${c.number} ${c.section} - ${c.name}`;
-  }, []);
+  React.useEffect(() => {
+    if (selectedCourse) {
+      setCredits(String(selectedCourse.minCredits));
+    }
+  }, [selectedCourse]);
+
+  const isCreditsValid = React.useMemo(() => {
+    if (!selectedCourse) return true;
+    if (selectedCourse.minCredits === selectedCourse.maxCredits) return true;
+    if (credits === "") return false;
+    
+    // Ensure it's a valid integer string (no decimals, no scientific notation)
+    if (!/^\d+$/.test(credits)) return false;
+
+    const val = Number(credits);
+    return val >= selectedCourse.minCredits && val <= selectedCourse.maxCredits;
+  }, [selectedCourse, credits]);
 
   const handleAddCourse = React.useCallback(() => {
     if (!selectedCourse) return;
     onAddCourse(
       selectedCourse.subject,
       Number(selectedCourse.number),
-      selectedCourse.section,
-      selectedCourse.credits,
+      Number(credits),
       selectedCourse.original.prerequisite ?? null
     );
     setSelectedKey(null);
     setOpen(false);
-  }, [onAddCourse, selectedCourse]);
+  }, [onAddCourse, selectedCourse, credits]);
 
   const handleCancel = React.useCallback(() => {
     setSelectedKey(null);
@@ -196,9 +201,8 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
   }, []);
 
   const handleSearchChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    startTransition(() => setSearchQuery(value));
-  }, [startTransition]);
+    setSearchQuery(e.target.value);
+  }, []);
 
   const handleSelect = React.useCallback((key: string) => {
     setSelectedKey(key);
@@ -212,11 +216,10 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full">
+        <Button variant="outline" className="w-full cursor-pointer">
           Add course
         </Button>
       </DialogTrigger>
-      {open && (
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Add Course</DialogTitle>
@@ -260,17 +263,32 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
                 </p>
               )}
             </div>
+            {selectedCourse && selectedCourse.minCredits !== selectedCourse.maxCredits && (
+              <div className="pt-4">
+                <label className="text-sm font-medium mb-1.5 block">
+                  Credits ({selectedCourse.minCredits}-{selectedCourse.maxCredits})
+                </label>
+                <Input
+                  type="number"
+                  value={credits}
+                  onChange={(e) => setCredits(e.target.value)}
+                  min={selectedCourse.minCredits}
+                  max={selectedCourse.maxCredits}
+                  step={1}
+                  className={!isCreditsValid ? "border-red-500 focus-visible:ring-red-500" : ""}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handleCancel}>
+            <Button variant="outline" onClick={handleCancel} className="cursor-pointer">
               Cancel
             </Button>
-            <Button onClick={handleAddCourse} disabled={!selectedCourse || isPending}>
+            <Button onClick={handleAddCourse} disabled={!selectedCourse || !isCreditsValid} className="cursor-pointer">
               Add course
             </Button>
           </DialogFooter>
         </DialogContent>
-      )}
 
     </Dialog>
   );
@@ -290,7 +308,7 @@ const CourseRow = React.memo(React.forwardRef<HTMLDivElement, {
             ? "bg-primary text-primary-foreground border-primary shadow-sm hover:bg-primary/90"
             : "bg-card hover:bg-accent border-border hover:border-border";
           return cn(
-            "w-full text-left rounded-[var(--radius)] border transform transition duration-300 ease-in-out will-change-transform",
+            "w-full text-left rounded-[var(--radius)] border transform transition duration-300 ease-in-out will-change-transform cursor-pointer",
             visual
           );
         })()}
@@ -298,8 +316,11 @@ const CourseRow = React.memo(React.forwardRef<HTMLDivElement, {
       >
         <div className="p-4 flex justify-between items-center">
           <div>
-            <p className="text-sm text-inherit">{course.subject} {course.number} {course.section}</p>
+            <p className="text-sm text-inherit">{course.subject} {course.number}</p>
             <p className="font-medium text-inherit">{course.name}</p>
+          </div>
+          <div className="text-sm text-inherit">
+             {course.minCredits === course.maxCredits ? `${course.minCredits} Credits` : `${course.minCredits}-${course.maxCredits} Credits`}
           </div>
         </div>
       </button>

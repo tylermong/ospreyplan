@@ -30,9 +30,9 @@ public class PlannedSemesterController
     }
 
     @PostMapping("/{semesterId}/courses")
-    public PlannedCourse addCourseToSemester(@PathVariable UUID semesterId, @RequestParam String subject, @RequestParam Integer courseNumber, @RequestParam String section, @RequestParam Integer credits)
+    public PlannedCourse addCourseToSemester(@PathVariable UUID semesterId, @RequestParam String subject, @RequestParam Integer courseNumber, @RequestParam Integer credits)
     {
-        return service.addCourseToSemester(semesterId, subject, courseNumber, section, credits);
+        return service.addCourseToSemester(semesterId, subject, courseNumber, credits);
     }
 
     @DeleteMapping("/{semesterId}/courses/{courseId}")
@@ -47,5 +47,11 @@ public class PlannedSemesterController
     public void deleteSemester(@PathVariable UUID semesterId)
     {
         service.deleteSemester(semesterId);
+    }
+
+    @PatchMapping("/{semesterId}")
+    public void updateSemesterTitle(@PathVariable UUID semesterId, @RequestParam String title)
+    {
+        service.updateSemesterTitle(semesterId, title);
     }
 }

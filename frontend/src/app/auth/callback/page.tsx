@@ -54,7 +54,7 @@ function AuthCallbackInner() {
         }
 
         sessionStorage.removeItem("pkce_code_verifier");
-        router.replace("/dashboard");
+        router.replace("/planner");
       } catch (e) {
         setError(e instanceof Error ? e.message : "Sign-in failed. Please try again.");
       }

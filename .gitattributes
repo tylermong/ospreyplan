@@ -1,0 +1,2 @@
+# Ignore all files and subdirectories within the components folder
+frontend/src/components/** linguist-detectable=false

@@ -49,18 +49,28 @@ public class SupabaseAuthFilter extends OncePerRequestFilter
         {
             try
             {
+                boolean authenticated = false;
                 if (accessToken != null)
                 {
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setBearerAuth(accessToken);
-                    headers.set(APIKEY_HEADER, supabaseApiKey);
-                    new RestTemplate().exchange(supabaseProjectUrl + "/auth/v1/user", HttpMethod.GET,
-                            new HttpEntity<>(headers), String.class);
-                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                            "supabase-user", null, List.of());
-                    SecurityContextHolder.getContext().setAuthentication(auth);
+                    try
+                    {
+                        HttpHeaders headers = new HttpHeaders();
+                        headers.setBearerAuth(accessToken);
+                        headers.set(APIKEY_HEADER, supabaseApiKey);
+                        new RestTemplate().exchange(supabaseProjectUrl + "/auth/v1/user", HttpMethod.GET,
+                                new HttpEntity<>(headers), String.class);
+                        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                                "supabase-user", null, List.of());
+                        SecurityContextHolder.getContext().setAuthentication(auth);
+                        authenticated = true;
+                    }
+                    catch (Exception e)
+                    {
+                        // Access token invalid or expired; fall through to try refresh token
+                    }
                 }
-                else if (refreshToken != null)
+                
+                if (!authenticated && refreshToken != null)
                 {
                     // Try to refresh the access token
                     HttpHeaders refreshHeaders = new HttpHeaders();
@@ -103,7 +113,7 @@ public class SupabaseAuthFilter extends OncePerRequestFilter
                     }
                 }
             }
-            catch (Exception ignore)
+            catch (Exception e)
             {
                 // Leave unauthenticated; SecurityConfig will return 401
             }

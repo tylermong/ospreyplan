@@ -5,14 +5,16 @@
 
 export type PrerequisiteMatrix = string[][]; // AND over outer, OR over inner
 
-export function parsePrerequisite(raw?: string | null): PrerequisiteMatrix | null {
+export function parsePrerequisite(
+  raw?: string | null
+): PrerequisiteMatrix | null {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return null;
     const matrix: string[][] = [];
     for (const group of parsed) {
-      if (Array.isArray(group) && group.every(x => typeof x === 'string')) {
+      if (Array.isArray(group) && group.every((x) => typeof x === "string")) {
         matrix.push(group as string[]);
       } else {
         return null; // invalid shape
@@ -38,21 +40,31 @@ export function extractCanonicalFromPlannerName(name: string): string {
   return `${match[1].toUpperCase()} ${match[2]}`;
 }
 
-export function isPrerequisiteSatisfied(matrix: PrerequisiteMatrix | null, takenCanonical: Set<string>): boolean {
+export function isPrerequisiteSatisfied(
+  matrix: PrerequisiteMatrix | null,
+  takenCanonical: Set<string>
+): boolean {
   if (!matrix || matrix.length === 0) return true;
-  return matrix.every(group => group.some(opt => takenCanonical.has(canonicalCourse(opt))));
+  return matrix.every((group) =>
+    group.some((opt) => takenCanonical.has(canonicalCourse(opt)))
+  );
 }
 
-export function listUnmetGroups(matrix: PrerequisiteMatrix | null, takenCanonical: Set<string>): string[][] {
+export function listUnmetGroups(
+  matrix: PrerequisiteMatrix | null,
+  takenCanonical: Set<string>
+): string[][] {
   if (!matrix) return [];
-  return matrix.filter(group => !group.some(opt => takenCanonical.has(canonicalCourse(opt))));
+  return matrix.filter(
+    (group) => !group.some((opt) => takenCanonical.has(canonicalCourse(opt)))
+  );
 }
 
 export function formatGroup(group: string[]): string {
   if (group.length === 1) return group[0];
-  return '(' + group.join(' OR ') + ')';
+  return "(" + group.join(" OR ") + ")";
 }
 
 export function formatMissing(matrix: string[][]): string {
-  return matrix.map(formatGroup).join(' AND ');
+  return matrix.map(formatGroup).join(" AND ");
 }

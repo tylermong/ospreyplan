@@ -21,6 +21,7 @@ export function NavItems({
     icon: LucideIcon
   }[]
 }) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { isMobile } = useSidebar()
 
   return (

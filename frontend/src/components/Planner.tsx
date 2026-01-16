@@ -1,36 +1,57 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { parsePrerequisite, extractCanonicalFromPlannerName, listUnmetGroups, parsePrerequisite as parseMatrix, canonicalCourse } from "@/lib/prerequisites";
-import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
+import { useMemo, useState } from "react";
+import {
+  parsePrerequisite as parseMatrix,
+  canonicalCourse,
+  extractCanonicalFromPlannerName,
+} from "@/lib/prerequisites";
 import AddBox from "./AddBox";
-import { AddCourseDialog } from "./AddCourseDialog";
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, } from "./ui/dropdown-menu";
-import { Pencil, ChevronDown, X } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SemesterCard } from "./SemesterCard";
+import { usePlannerApi } from "@/hooks/usePlannerApi";
+import { calculateTotalCredits } from "@/lib/planner-utils";
+import { Course, BackendSemester } from "@/types/planner.types";
+import { DegreeAudit } from "./DegreeAudit";
 
-type Course = { id: number | string; name: string; credits: number; prerequisite?: string | null; unmetPrereqs?: string[] };
-type Semester = { id: string; title: string; term: string; year: number; courses: Course[] };
+interface PlannerProps {
+  initialSemesters?: BackendSemester[] | null;
+  initialUserId?: string | null;
+}
 
-type BackendSemester = {
-  id: string;
-  title: string;
-  userId: string;
-  plannedCourses: Array<{ id: string; subject: string; courseNumber: number; section: string; credits: number }>;
-};
-
-export default function Planner() {
-  const [semesters, setSemesters] = useState<Semester[]>([]);
-  const [editingSemesterId, setEditingSemesterId] = useState<string | null>(null);
+export default function Planner({ initialSemesters, initialUserId }: PlannerProps) {
+  const {
+    semesters,
+    userId,
+    loading,
+    showCreditWarning,
+    pendingCourse,
+    addSemester,
+    addCourse,
+    removeCourse,
+    renameSemester,
+    deleteSemester,
+    confirmAddCourse,
+    cancelAddCourse,
+    setShowCreditWarning,
+  } = usePlannerApi(initialSemesters, initialUserId);
+  const [editingSemesterId, setEditingSemesterId] = useState<string | null>(
+    null
+  );
   const [draftTerm, setDraftTerm] = useState<string>("Fall");
   const [draftYear, setDraftYear] = useState<number>(new Date().getFullYear());
-  const [showCreditWarning, setShowCreditWarning] = useState(false);
-  const [pendingCourse, setPendingCourse] = useState<{ semesterId: string; courseName: string; credits: number; prerequisiteRaw?: string | null } | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [hoveredCourseId, setHoveredCourseId] = useState<string | number | null>(null);
+  const [hoveredCourseId, setHoveredCourseId] = useState<
+    string | number | null
+  >(null);
 
   const TERMS = ["Summer", "Fall", "Winter", "Spring"];
   const YEAR_START = 2018;
@@ -40,304 +61,69 @@ export default function Planner() {
     (_, i) => YEAR_START + i
   ).reverse();
 
-  function addSemester() {
-    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
-
-    if (!userId) {
-      toast.error("You must be signed in to create a semester.");
-      return;
-    }
-
-    // compute next term/year based on last semester
-    const currentYear = new Date().getFullYear();
-    const last = semesters[semesters.length - 1];
-    let term = "Fall";
-    let year = currentYear;
-    if (last) {
-      const lastTerm = last.term;
-      const lastYear = last.year ?? currentYear;
-      if (lastTerm === "Summer") {
-        term = "Fall";
-        year = lastYear;
-      } else if (lastTerm === "Fall") {
-        term = "Spring";
-        year = lastYear + 1;
-      } else if (lastTerm === "Winter") {
-        term = "Spring";
-        year = lastYear;
-      } else if (lastTerm === "Spring") {
-        term = "Fall";
-        year = lastYear;
-      }
-    }
-
-    const title = `${term} ${year}`;
-    fetch(`${apiBase}/api/semesters?userId=${userId}&title=${encodeURIComponent(title)}`, {
-      method: "POST",
-      credentials: "include",
-    })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`Create semester failed: ${res.status}`);
-        return res.json();
-      })
-      .then((data: BackendSemester) => {
-        setSemesters((prev) => [
-          ...prev,
-          { id: data.id, title: data.title, term, year, courses: [] },
-        ]);
-        toast.success("Semester created");
-      })
-      .catch((e) => {
-        console.error("Failed to create semester", e);
-        toast.error("Failed to create semester");
-      });
-  }
-
-  function addCourse(semesterId: string, courseName: string, credits: number, prerequisiteRaw?: string | null) {
-    const semester = semesters.find(s => s.id === semesterId);
-    if (!semester) return;
-
-    const isDuplicate = semester.courses.some((course) => course.name === courseName);
-    
-    if (isDuplicate) {
-      toast.error("This course already exists in the semester.", {position: 'top-center', style: { backgroundColor: 'var(--destructive)', color: 'var(--destructive-foreground)'}, closeButton: true});
-      return;
-    }
-
-  const currentCredits = calculateTotalCredits(semester);
-  const newTotalCredits = currentCredits + credits;
-
-    if (newTotalCredits > 21) {
-      setPendingCourse({ semesterId, courseName, credits, prerequisiteRaw });
-      setShowCreditWarning(true);
-      return;
-    }
-
-    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
-
-    if (!userId) {
-      toast.error("You must be signed in to add a course.");
-      return;
-    }
-
-    // Expect courseName to be in the format 'SUBJ 101 001' (AddCourseDialog provides structured values)
-    const match = courseName.match(/^([A-Z]+)\s+(\d+)\s+([^\s]+)\b/);
-    let subject = "";
-    let courseNumber = 0;
-    let section = "";
-    if (match) {
-      subject = match[1];
-      courseNumber = Number(match[2]);
-      section = match[3];
-    }
-
-    fetch(`${apiBase}/api/semesters/${semesterId}/courses?subject=${encodeURIComponent(subject)}&courseNumber=${courseNumber}&section=${encodeURIComponent(section)}&credits=${encodeURIComponent(String(credits))}`, {
-      method: "POST",
-      credentials: "include",
-    })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`Add course failed: ${res.status}`);
-        return res.json();
-      })
-      .then((createdCourse) => {
-        let unmetForNew: string[] | undefined;
-        setSemesters((prev) => {
-          const updated = prev.map((s) =>
-            s.id === semesterId
-              ? {
-                  ...s,
-                  courses: [
-                    ...s.courses,
-                    { id: createdCourse.id ?? `${s.courses.length + 1}`, name: courseName, credits, prerequisite: (createdCourse as any).prerequisite ?? prerequisiteRaw ?? null },
-                  ],
-                }
-              : s
-          );
-          const recomputed = recomputePrereqStatuses(updated);
-          // find new course
-            const sem = recomputed.find(s => s.id === semesterId);
-            const c = sem?.courses.find(c => c.name === courseName);
-            if (c?.unmetPrereqs) unmetForNew = c.unmetPrereqs;
-          return recomputed;
-        });
-        if (unmetForNew && unmetForNew.length > 0) {
-          toast.warning(`Added course, missing prerequisites: ${unmetForNew.join(' AND ')}`);
-        } else {
-          toast.success("Course added");
-        }
-      })
-      .catch((e) => {
-        console.error("Failed to add course to semester", e);
-        toast.error("Failed to add course");
-      });
-  }
-
-  function removeCourse(semesterId: string, courseId: number | string) {
-    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
-
-    // If authenticated and courseId looks like a backend id (string/uuid) call backend delete
-    if (userId && typeof courseId === "string") {
-      fetch(`${apiBase}/api/semesters/${semesterId}/courses/${encodeURIComponent(String(courseId))}`, {
-        method: "DELETE",
-        credentials: "include",
-      })
-        .then((res) => {
-          if (res.ok) {
-            setSemesters((prev) => {
-              const updated = prev.map((semester) =>
-                semester.id === semesterId
-                  ? { ...semester, courses: semester.courses.filter((course) => course.id !== courseId) }
-                  : semester
-              );
-              return recomputePrereqStatuses(updated);
-            });
-            if (hoveredCourseId === courseId) setHoveredCourseId(null);
-            toast.success("Course removed");
-          } else {
-            toast.error("Failed to remove course");
-            console.error("Failed to remove course", res.status, res.statusText);
-          }
-        })
-        .catch((e) => {
-          toast.error("Failed to remove course");
-          console.error("Failed to remove course", e);
-        });
-      return;
-    }
-
-    // Local-only removal when not authenticated or course is local-only
-    setSemesters((prev) => {
-      const updated = prev.map((semester) =>
-        semester.id === semesterId
-          ? {
-              ...semester,
-              courses: semester.courses.filter((course) => course.id !== courseId),
-            }
-          : semester
-      );
-      return recomputePrereqStatuses(updated);
-    });
-  }
-
-  function calculateTotalCredits(semester: Semester): number {
-    return semester.courses.reduce((total, course) => total + course.credits, 0);
-  }
-
-  // Load current user and semesters on mount
-  useEffect(() => {
-    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
-    fetch(`${apiBase}/auth/me`, { method: "GET", credentials: "include" })
-      .then(async (res) => {
-        if (!res.ok) throw new Error("not authenticated");
-        return res.json();
-      })
-      .then((user) => {
-        if (user && user.id) {
-          setUserId(user.id);
-          // fetch semesters
-          fetch(`${apiBase}/api/semesters/user/${user.id}`, { method: "GET", credentials: "include" })
-            .then((r) => r.json())
-            .then((data: BackendSemester[]) => {
-              const mapped: Semester[] = (data || []).map((s) => ({
-                id: s.id,
-                title: s.title,
-                term: s.title.split(" ")[0] ?? "Fall",
-                year: Number(s.title.split(" ")[1]) || new Date().getFullYear(),
-                courses: (s.plannedCourses || []).map((c) => ({ id: c.id, name: `${c.subject} ${c.courseNumber} ${c.section}`, credits: c.credits, prerequisite: (c as any).prerequisite ?? null })),
-              }));
-              setSemesters(recomputePrereqStatuses(mapped));
-            })
-            .catch((e) => console.error("failed to load semesters", e));
-        }
-      })
-      .catch(() => {
-        // not signed in or failed - keep local state
-      });
-  }, []);
-
-  function startRenamingSemester(semester: Semester) {
-    setEditingSemesterId(semester.id);
-    setDraftTerm(semester.term ?? "Fall");
-    setDraftYear(semester.year ?? new Date().getFullYear());
-  }
-
-  // Recompute unmetPrereqs for each course using chronological validation.
-  // Only courses placed in earlier semesters satisfy prerequisites.
-  // Same-semester or later-semester courses do not count, even if present.
-  function recomputePrereqStatuses(current: Semester[]): Semester[] {
-    const termRank: Record<string, number> = { "Summer": 0, "Fall": 1, "Winter": 2, "Spring": 3 };
-    const sorted = [...current].sort((a,b) => {
-      const aAdjusted = (a.term === "Winter" || a.term === "Spring") ? a.year - 1 : a.year;
-      const bAdjusted = (b.term === "Winter" || b.term === "Spring") ? b.year - 1 : b.year;
-      if (aAdjusted !== bAdjusted) return aAdjusted - bAdjusted;
-      // same adjusted academic cycle; order by rank
-      return termRank[a.term] - termRank[b.term];
-    });
-    const takenBeforePerSemester: Map<string, Set<string>> = new Map();
-    const cumulative = new Set<string>();
-    for (const sem of sorted) {
-      // snapshot of courses taken strictly before this semester
-      takenBeforePerSemester.set(sem.id, new Set(cumulative));
-      // then add this semester's courses to cumulative AFTER snapshot
-      for (const c of sem.courses) {
-        cumulative.add(extractCanonicalFromPlannerName(c.name));
-      }
-    }
-    // Now compute unmetPrereqs using snapshot sets
-    return current.map(sem => ({
-      ...sem,
-      courses: sem.courses.map(c => {
-        const matrix = parsePrerequisite(c.prerequisite ?? null);
-        const priorSet = takenBeforePerSemester.get(sem.id) ?? new Set<string>();
-        const unmet = listUnmetGroups(matrix, priorSet);
-        return {
-          ...c,
-            unmetPrereqs: unmet.length > 0 ? unmet.map(g => g.join(' OR ')) : undefined
-        };
-      })
-    }));
-  }
-
-  // Hover derived sets
   const hoverSets = useMemo(() => {
-    if (!hoveredCourseId) return { prereq: new Set<string>(), postreq: new Set<string>() };
-    const allCourses: { id: string | number; canonical: string; raw: any; semIndex: number }[] = [];
-    semesters.forEach((sem, idx) => sem.courses.forEach(c => allCourses.push({ id: c.id, canonical: extractCanonicalFromPlannerName(c.name), raw: c, semIndex: idx })));
-    const target = allCourses.find(c => c.id === hoveredCourseId);
-    if (!target) return { prereq: new Set<string>(), postreq: new Set<string>() };
+    if (!hoveredCourseId)
+      return { prereq: new Set<string>(), postreq: new Set<string>() };
+    const allCourses: {
+      id: string | number;
+      canonical: string;
+      raw: Course;
+      semIndex: number;
+    }[] = [];
+    semesters.forEach((sem, idx) =>
+      sem.courses.forEach((c) =>
+        allCourses.push({
+          id: c.id,
+          canonical: extractCanonicalFromPlannerName(c.name),
+          raw: c,
+          semIndex: idx,
+        })
+      )
+    );
+    const target = allCourses.find((c) => c.id === hoveredCourseId);
+    if (!target)
+      return { prereq: new Set<string>(), postreq: new Set<string>() };
     const prereqSet = new Set<string>();
     const postSet = new Set<string>();
     const matrix = parseMatrix(target.raw.prerequisite ?? null);
     if (matrix) {
-      matrix.flat().forEach(code => prereqSet.add(canonicalCourse(code)));
+      matrix.flat().forEach((code) => prereqSet.add(canonicalCourse(code)));
     }
-    // postrequisites: courses that include this course in their prerequisite matrix
     for (const other of allCourses) {
       if (other.id === target.id) continue;
       const m = parseMatrix(other.raw.prerequisite ?? null);
-      if (m && m.some(group => group.some(code => canonicalCourse(code) === target.canonical))) {
+      if (
+        m &&
+        m.some((group) =>
+          group.some((code) => canonicalCourse(code) === target.canonical)
+        )
+      ) {
         postSet.add(other.id.toString());
       }
     }
     return { prereq: prereqSet, postreq: postSet };
   }, [hoveredCourseId, semesters]);
 
-  function commitRenameSemester() {
-    if (editingSemesterId === null) return;
+  function startRenamingSemester(
+    semesterId: string,
+    term: string,
+    year: number
+  ) {
+    setEditingSemesterId(semesterId);
+    setDraftTerm(term ?? "Fall");
+    setDraftYear(year ?? new Date().getFullYear());
+  }
 
-    const nextTerm = draftTerm || "Fall";
-    const nextYear = draftYear || new Date().getFullYear();
-    const nextTitle = `${nextTerm} ${nextYear}`;
-    setSemesters((prev) =>
-      prev.map((semester) =>
-        semester.id === editingSemesterId
-          ? { ...semester, term: nextTerm, year: nextYear, title: nextTitle }
-          : semester
-      )
-    );
-    setEditingSemesterId(null);
-    setDraftTerm("Fall");
-    setDraftYear(new Date().getFullYear());
+  function commitRenameSemester() {
+    if (!editingSemesterId) return;
+
+    renameSemester(editingSemesterId, draftTerm, draftYear)
+      .then(() => {
+        setEditingSemesterId(null);
+        setDraftTerm("Fall");
+        setDraftYear(new Date().getFullYear());
+      })
+      .catch(() => {});
   }
 
   function cancelRenameSemester() {
@@ -346,61 +132,85 @@ export default function Planner() {
     setDraftYear(new Date().getFullYear());
   }
 
-  function deleteSemester(semesterId: string) {
-    const apiBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
-    if (!userId) {
-      toast.error("You must be signed in to delete a semester.");
-      return;
-    }
+  const refreshTrigger = semesters.reduce((acc, s) => acc + s.courses.length, 0);
 
-    fetch(`${apiBase}/api/semesters/${encodeURIComponent(semesterId)}`, {
-      method: "DELETE",
-      credentials: "include",
-    })
-      .then((res) => {
-        if (res.ok) {
-          setSemesters((prev) => prev.filter((s) => s.id !== semesterId));
-          toast.success("Semester deleted");
-        } else {
-          toast.error("Failed to delete semester");
-          console.error("Failed to delete semester", res.status, res.statusText);
-        }
-      })
-      .catch((e) => {
-        toast.error("Failed to delete semester");
-        console.error("Failed to delete semester", e);
-      });
-  }
+  const totalPlannedCredits = useMemo(() => {
+    return semesters.reduce((acc, s) => {
+      return acc + s.courses.reduce((sum, c) => sum + c.credits, 0);
+    }, 0);
+  }, [semesters]);
 
-  function confirmAddCourse() {
-    if (!pendingCourse) return;
-
-    const { semesterId, courseName, credits, prerequisiteRaw } = pendingCourse;
-
-    addCourse(semesterId, courseName, credits, prerequisiteRaw);
-
-    setShowCreditWarning(false);
-    setPendingCourse(null);
-  }
-
-  function cancelAddCourse() {
-    setShowCreditWarning(false);
-    setPendingCourse(null);
+  if (loading) {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-6 rounded" />
+                    <Skeleton className="h-4 w-20" />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-6 rounded" />
+                    <Skeleton className="h-4 w-20" />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-6 rounded" />
+                    <Skeleton className="h-4 w-32" />
+                </div>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="rounded-xl border bg-card text-card-foreground shadow-sm h-60 p-6 space-y-4">
+                        <div className="flex justify-between items-center">
+                            <Skeleton className="h-6 w-32" />
+                            <div className="flex gap-2">
+                                <Skeleton className="h-8 w-8" />
+                                <Skeleton className="h-8 w-8" />
+                            </div>
+                        </div>
+                        <div className="space-y-3">
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="mt-12 border-t pt-8">
+                <Skeleton className="h-8 w-48 mb-6" />
+                <div className="space-y-4">
+                    <Skeleton className="h-8 w-full" />
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <Skeleton className="h-32" />
+                        <Skeleton className="h-32" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4 text-sm">
         <div className="flex items-center gap-2">
-          <span className="h-3 w-6 rounded bg-amber-400 inline-block" aria-hidden />
+          <span
+            className="h-3 w-6 rounded bg-amber-400 inline-block"
+            aria-hidden
+          />
           <span>Prerequisite</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="h-3 w-6 rounded bg-emerald-400 inline-block" aria-hidden />
+          <span
+            className="h-3 w-6 rounded bg-emerald-400 inline-block"
+            aria-hidden
+          />
           <span>Postrequisite</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="h-3 w-6 rounded bg-red-500 inline-block" aria-hidden />
+          <span
+            className="h-3 w-6 rounded bg-red-500 inline-block"
+            aria-hidden
+          />
           <span>Missing prerequisites</span>
         </div>
       </div>
@@ -408,137 +218,42 @@ export default function Planner() {
         {semesters.map((semester) => {
           const isEditing = editingSemesterId === semester.id;
           return (
-            /* Semester cards */
-            <Card key={semester.id}>
-              <CardHeader className="items-center">
-                <CardTitle>
-                  {isEditing ? (
-                    <div className="flex w-full items-center gap-2">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" className="rounded-md px-2 py-1 text-sm flex items-center gap-2">
-                            <span>{draftTerm}</span>
-                            <ChevronDown className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent side="bottom" className="w-40">
-                          {TERMS.map((t) => (
-                            <DropdownMenuItem key={t} onSelect={() => setDraftTerm(t)}>
-                              {t}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" className="rounded-md px-2 py-1 text-sm flex items-center gap-2">
-                            <span>{draftYear}</span>
-                            <ChevronDown className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent side="bottom" className="w-36 max-h-56 overflow-auto">
-                          {years.map((y) => (
-                            <DropdownMenuItem key={y} onSelect={() => setDraftYear(y)}>
-                              {y}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  ) : (
-                    semester.title
-                  )}
-                </CardTitle>
-                <CardAction className="row-span-1 self-center flex items-center gap-2">
-                  {isEditing ? (
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline" onClick={commitRenameSemester}>Save</Button>
-                      <Button size="sm" variant="ghost" onClick={cancelRenameSemester}>Cancel</Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => startRenamingSemester(semester)}
-                        aria-label="Rename semester"
-                        title="Rename"
-                      >
-                        <Pencil />
-                      </Button>
-
-                      <Button size="icon" variant="ghost" onClick={() => deleteSemester(semester.id)} title="Delete semester" aria-label="Delete semester">
-                        <X size={16} />
-                      </Button>
-                    </div>
-                  )}
-                </CardAction>
-              </CardHeader>
-
-              {/* Courses */}
-              <CardContent className="space-y-3">
-              <div className="space-y-2">
-                {semester.courses.map((course) => {
-                  const canonical = extractCanonicalFromPlannerName(course.name);
-                  const isHovered = hoveredCourseId === course.id;
-                  const isPrereqOfHover = hoverSets.postreq.has(course.id.toString());
-                  const prereqSet = hoverSets.prereq;
-                  const isPrereq = prereqSet.has(canonical);
-                  const unmet = course.unmetPrereqs && course.unmetPrereqs.length > 0;
-                  const classes = ["rounded-md border px-3 py-2 text-sm flex items-center justify-between transition-colors"];
-                  if (unmet) classes.push("border-red-500 bg-red-50 dark:bg-red-950/30");
-                  if (isHovered) classes.push("ring-2 ring-ring border-ring");
-                  else if (isPrereq) classes.push("bg-amber-50 dark:bg-amber-900/30 border-amber-400");
-                  else if (isPrereqOfHover) classes.push("bg-emerald-50 dark:bg-emerald-900/30 border-emerald-400");
-                  const content = (
-                    <div
-                      onMouseEnter={() => setHoveredCourseId(course.id)}
-                      onMouseLeave={() => setHoveredCourseId(null)}
-                      className={classes.join(" ")}
-                    >
-                      <span className="flex-1">{course.name}</span>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => removeCourse(semester.id, course.id)}
-                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                        aria-label="Remove course"
-                        title="Remove course"
-                      >
-                        <X size={14} />
-                      </Button>
-                    </div>
-                  );
-                  if (!unmet) {
-                    return <div key={course.id}>{content}</div>;
-                  }
-                  return (
-                    <HoverCard key={course.id} openDelay={50} closeDelay={50}>
-                      <HoverCardTrigger asChild>
-                        {content}
-                      </HoverCardTrigger>
-                      <HoverCardContent>
-                        <div className="space-y-2">
-                          <p className="font-semibold text-sm">Missing prerequisites</p>
-                          <ul className="list-disc pl-4 text-xs space-y-1">
-                            {course.unmetPrereqs?.map((g,i) => (
-                              <li key={i}>{g}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </HoverCardContent>
-                    </HoverCard>
-                  );
-                })}
-              </div>
-
-              <AddCourseDialog onAddCourse={(subject: string, courseNumber: number, section: string, credits: number, prerequisiteRaw: string | null | undefined) => {
-                const courseName = `${subject} ${courseNumber} ${section}`;
-                addCourse(semester.id, courseName, credits, prerequisiteRaw ?? null);
-              }} />
-              </CardContent>
-            </Card>
+            <SemesterCard
+              key={semester.id}
+              semester={semester}
+              isEditing={isEditing}
+              draftTerm={draftTerm}
+              draftYear={draftYear}
+              terms={TERMS}
+              years={years}
+              hoveredCourseId={hoveredCourseId}
+              hoverSets={hoverSets}
+              onStartRenaming={() =>
+                startRenamingSemester(semester.id, semester.term, semester.year)
+              }
+              onCommitRename={commitRenameSemester}
+              onCancelRename={cancelRenameSemester}
+              onSetDraftTerm={setDraftTerm}
+              onSetDraftYear={setDraftYear}
+              onDelete={() => deleteSemester(semester.id)}
+              onAddCourse={(
+                subject,
+                courseNumber,
+                credits,
+                prerequisiteRaw
+              ) => {
+                const courseName = `${subject} ${courseNumber}`;
+                addCourse(
+                  semester.id,
+                  courseName,
+                  credits,
+                  prerequisiteRaw ?? null
+                );
+              }}
+              onRemoveCourse={(courseId) => removeCourse(semester.id, courseId)}
+              onSetHoveredCourseId={setHoveredCourseId}
+              extractCanonical={extractCanonicalFromPlannerName}
+            />
           );
         })}
 
@@ -554,27 +269,44 @@ export default function Planner() {
               <DialogTitle>Credit Limit Warning</DialogTitle>
               <DialogDescription>
                 Adding this course will bring your total credits to{" "}
-                {pendingCourse && (() => {
-                  const semester = semesters.find(s => s.id === pendingCourse.semesterId);
-                  return semester ? calculateTotalCredits(semester) + pendingCourse.credits : 0;
-                })()}{" "}
-                credits, which exceeds Stockton&#39;s 21 credit per semester limit. 
-                See the{" "}
-                <a href="https://stockton.edu/academic-advising/academic-information/academic-overload.html" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline'}}>Academic Overload</a>
-                {" "}page for more information.
+                {pendingCourse &&
+                  (() => {
+                    const semester = semesters.find(
+                      (s) => s.id === pendingCourse.semesterId
+                    );
+                    return semester
+                      ? calculateTotalCredits(semester) + pendingCourse.credits
+                      : 0;
+                  })()}{" "}
+                credits, which exceeds Stockton&#39;s 21 credit per semester
+                limit. See the{" "}
+                <a
+                  href="https://stockton.edu/academic-advising/academic-information/academic-overload.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ textDecoration: "underline" }}
+                >
+                  Academic Overload
+                </a>{" "}
+                page for more information.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={cancelAddCourse}>
                 Cancel
               </Button>
-              <Button onClick={confirmAddCourse}>
-                Add Course Anyway
-              </Button>
+              <Button onClick={confirmAddCourse}>Add Course Anyway</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
+
+      {userId && (
+        <div className="mt-12 border-t pt-8">
+          <h2 className="text-2xl font-semibold mb-6">Degree Audit</h2>
+          <DegreeAudit userId={userId} refreshTrigger={refreshTrigger} totalCredits={totalPlannedCredits} />
+        </div>
+      )}
     </div>
   );
 }
