@@ -15,7 +15,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Pencil, ChevronDown, X } from "lucide-react";
+import { Pencil, ChevronDown, X, Check } from "lucide-react";
 import { AddCourseDialog } from "./AddCourseDialog";
 import { CourseItem } from "./CourseItem";
 
@@ -131,12 +131,22 @@ export function SemesterCard({
         </CardTitle>
         <CardAction className="row-span-1 self-center flex items-center gap-2">
           {isEditing ? (
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={onCommitRename} className="cursor-pointer">
-                Save
+            <div className="flex items-center gap-1">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={onCommitRename}
+                className="h-8 w-8 cursor-pointer"
+              >
+                <Check className="size-4" />
               </Button>
-              <Button size="sm" variant="ghost" onClick={onCancelRename} className="cursor-pointer">
-                Cancel
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={onCancelRename}
+                className="h-8 w-8 cursor-pointer"
+              >
+                <X className="size-4" />
               </Button>
             </div>
           ) : (
@@ -147,7 +157,7 @@ export function SemesterCard({
                 onClick={onStartRenaming}
                 aria-label="Rename semester"
                 title="Rename"
-                className="cursor-pointer"
+                className="h-8 w-8 cursor-pointer"
               >
                 <Pencil />
               </Button>
@@ -158,7 +168,7 @@ export function SemesterCard({
                 onClick={onDelete}
                 title="Delete semester"
                 aria-label="Delete semester"
-                className="cursor-pointer"
+                className="h-8 w-8 cursor-pointer"
               >
                 <X size={16} />
               </Button>
