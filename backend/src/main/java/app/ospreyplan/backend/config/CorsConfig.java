@@ -1,10 +1,14 @@
 package app.ospreyplan.backend.config;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 public class CorsConfig
@@ -13,22 +17,29 @@ public class CorsConfig
     private String frontendBaseUrl;
 
     @Bean
-    public WebMvcConfigurer corsConfigurer()
-    {
-        return new WebMvcConfigurer()
-        {
-            @Override
-            public void addCorsMappings(CorsRegistry registry)
-            {
-                // Generate both www and non-www variants of the frontend URL
-                String[] allowedOrigins = generateAllowedOrigins(frontendBaseUrl);
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        
+        // Use a Set to strictly avoid duplicates
+        java.util.Set<String> allowedOrigins = new java.util.LinkedHashSet<>();
+        
+        // Always allow localhost for development
+        allowedOrigins.add("http://localhost:3000");
 
-                registry.addMapping("/**")
-                        .allowedOrigins(allowedOrigins)
-                        .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-                        .allowCredentials(true);
-            }
-        };
+        // If in production, add the production URL variants
+        if (frontendBaseUrl != null && !frontendBaseUrl.isEmpty()) {
+            allowedOrigins.addAll(Arrays.asList(generateAllowedOrigins(frontendBaseUrl)));
+        }
+        
+        configuration.setAllowedOrigins(new java.util.ArrayList<>(allowedOrigins));
+        
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
+        configuration.setAllowedHeaders(Arrays.asList("*")); 
+        configuration.setAllowCredentials(true);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     /**
