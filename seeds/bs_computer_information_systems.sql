@@ -102,10 +102,10 @@ VALUES
 -- Attribute Requirements
 INSERT INTO public.degree_requirements (id, degree_code, category, name, required_count, priority)
 VALUES 
-  ('cis-attr-a', 'bs-computer-science', 'Attribute Requirements', 'Arts (A)', 1, 100),
-  ('cis-attr-h', 'bs-computer-science', 'Attribute Requirements', 'Historical Consciousness (H)', 1, 101),
-  ('cis-attr-v', 'bs-computer-science', 'Attribute Requirements', 'Values/Ethics (V)', 1, 102),
-  ('cis-attr-i', 'bs-computer-science', 'Attribute Requirements', 'International/Multicultural (I)', 1, 103);
+  ('cis-attr-a', 'bs-computer-information-systems', 'Attribute Requirements', 'Arts (A)', 1, 100),
+  ('cis-attr-h', 'bs-computer-information-systems', 'Attribute Requirements', 'Historical Consciousness (H)', 1, 101),
+  ('cis-attr-v', 'bs-computer-information-systems', 'Attribute Requirements', 'Values/Ethics (V)', 1, 102),
+  ('cis-attr-i', 'bs-computer-information-systems', 'Attribute Requirements', 'International/Multicultural (I)', 1, 103);
 
 INSERT INTO public.requirement_criteria (requirement_id, type, attribute)
 VALUES 
