@@ -314,7 +314,7 @@ public class DegreeAuditService {
             if (criteria.getMinLevel() != null) {
                 desc += " (" + criteria.getMinLevel() + "+)";
             }
-            return desc;
+            return "Any " + desc + " Course";
         } else if ("CATCH_ALL".equals(criteria.getType())) {
             return "Any Course";
         }
