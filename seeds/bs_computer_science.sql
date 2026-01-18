@@ -8,7 +8,7 @@ INSERT INTO public.degree_requirements (id, degree_code, category, name, require
 VALUES 
   ('cs-core-2101', 'bs-computer-science', 'Major in Computer Science, CSCI, BS', 'Programming and Problem Solving I', 1, 10),
   ('cs-core-2102', 'bs-computer-science', 'Major in Computer Science, CSCI, BS', 'Programming and Problem Solving II', 1, 11),
-  ('cs-core-3101', 'bs-computer-science', 'Major in Computer Science, CSCI, BS', 'Data Structures and Algorithms I', 1, 12),
+  ('cs-core-3103', 'bs-computer-science', 'Major in Computer Science, CSCI, BS', 'Data Structures and Algorithms I', 1, 12),
   ('cs-core-3230', 'bs-computer-science', 'Major in Computer Science, CSCI, BS', 'Computer Networking Principles', 1, 13),
   ('cs-core-3250', 'bs-computer-science', 'Major in Computer Science, CSCI, BS', 'Computer Organization', 1, 14),
   ('cs-core-4104', 'bs-computer-science', 'Major in Computer Science, CSCI, BS', 'Data Structures and Algorithms II', 1, 15),
@@ -19,7 +19,7 @@ INSERT INTO public.requirement_criteria (requirement_id, type, subject, course_n
 VALUES 
   ('cs-core-2101', 'COURSE', 'CSCI', 2101),
   ('cs-core-2102', 'COURSE', 'CSCI', 2102),
-  ('cs-core-3101', 'COURSE', 'CSCI', 3101),
+  ('cs-core-3103', 'COURSE', 'CSCI', 3103),
   ('cs-core-3230', 'COURSE', 'CIST', 3230),
   ('cs-core-3250', 'COURSE', 'CSCI', 3250),
   ('cs-core-4104', 'COURSE', 'CSCI', 4104),
