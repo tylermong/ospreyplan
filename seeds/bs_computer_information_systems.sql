@@ -90,8 +90,9 @@ VALUES
 
 INSERT INTO public.requirement_criteria (requirement_id, type, subject)
 VALUES 
-  ('cis-gen-gah', 'SUBJECT', 'GAH'),
   ('cis-gen-gis', 'SUBJECT', 'GIS'),
+  ('cis-gen-gen', 'SUBJECT', 'GEN'),
+  ('cis-gen-gah', 'SUBJECT', 'GAH'),
   ('cis-gen-gnm', 'SUBJECT', 'GNM'),
   ('cis-gen-gss', 'SUBJECT', 'GSS');
 
