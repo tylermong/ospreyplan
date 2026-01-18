@@ -23,6 +23,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.springframework.beans.factory.annotation.Value;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class SupabaseAuthFilter extends OncePerRequestFilter
@@ -34,6 +37,8 @@ public class SupabaseAuthFilter extends OncePerRequestFilter
     String supabaseProjectUrl;
     @Value("${supabase.anon-key:${supabase.service-role-key}}")
     String supabaseApiKey;
+    @Value("${supabase.jwt-secret}")
+    String supabaseJwtSecret;
 
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
@@ -52,21 +57,42 @@ public class SupabaseAuthFilter extends OncePerRequestFilter
                 boolean authenticated = false;
                 if (accessToken != null)
                 {
-                    try
-                    {
-                        HttpHeaders headers = new HttpHeaders();
-                        headers.setBearerAuth(accessToken);
-                        headers.set(APIKEY_HEADER, supabaseApiKey);
-                        new RestTemplate().exchange(supabaseProjectUrl + "/auth/v1/user", HttpMethod.GET,
-                                new HttpEntity<>(headers), String.class);
-                        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                                "supabase-user", null, List.of());
-                        SecurityContextHolder.getContext().setAuthentication(auth);
-                        authenticated = true;
+                    // Try to validate as a Demo User Token (Self-Signed)
+                    try {
+                         var claims = Jwts.parserBuilder()
+                            .setSigningKey(supabaseJwtSecret.getBytes(StandardCharsets.UTF_8))
+                            .build()
+                            .parseClaimsJws(accessToken)
+                            .getBody();
+                         String email = claims.get("email", String.class);
+                         if (email != null && email.endsWith("@demo.app")) {
+                            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                                    claims.getSubject(), null, List.of());
+                            SecurityContextHolder.getContext().setAuthentication(auth);
+                            authenticated = true;
+                         }
+                    } catch (Exception e) {
+                        // Not a valid demo token, ignore
                     }
-                    catch (Exception e)
-                    {
-                        // Access token invalid or expired; fall through to try refresh token
+
+                    // If not demo, try Supabase validation
+                    if (!authenticated) {
+                        try
+                        {
+                            HttpHeaders headers = new HttpHeaders();
+                            headers.setBearerAuth(accessToken);
+                            headers.set(APIKEY_HEADER, supabaseApiKey);
+                            new RestTemplate().exchange(supabaseProjectUrl + "/auth/v1/user", HttpMethod.GET,
+                                    new HttpEntity<>(headers), String.class);
+                            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                                    "supabase-user", null, List.of());
+                            SecurityContextHolder.getContext().setAuthentication(auth);
+                            authenticated = true;
+                        }
+                        catch (Exception e)
+                        {
+                            // Access token invalid or expired; fall through to try refresh token
+                        }
                     }
                 }
                 
