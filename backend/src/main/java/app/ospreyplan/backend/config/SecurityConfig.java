@@ -9,22 +9,24 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.http.HttpMethod;
 import app.ospreyplan.backend.security.SupabaseAuthFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 public class SecurityConfig
 {
     private final SupabaseAuthFilter supabaseAuthFilter;
+    private final CorsConfigurationSource corsConfigurationSource;
 
-    public SecurityConfig(SupabaseAuthFilter supabaseAuthFilter)
+    public SecurityConfig(SupabaseAuthFilter supabaseAuthFilter, CorsConfigurationSource corsConfigurationSource)
     {
         this.supabaseAuthFilter = supabaseAuthFilter;
+        this.corsConfigurationSource = corsConfigurationSource;
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception
     {
-        // TODO: update from deprecated method
-        http.cors();
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource));
 
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(
