@@ -127,7 +127,7 @@ public class AuthController
     }
 
     @PostMapping("/demo-login")
-    public ResponseEntity<Map<String, Object>> demoLogin() {
+    public ResponseEntity<Map<String, Object>> demoLogin(HttpServletRequest request) {
         UUID demoUserId = UUID.randomUUID();
         String demoEmail = "demo-" + demoUserId + "@demo.app";
 
@@ -179,11 +179,23 @@ public class AuthController
        // 4. Set Cookies
         boolean secureCookie = backendBaseUrl != null && backendBaseUrl.startsWith("https://");
 
+        boolean isLocalhost = backendBaseUrl != null && (backendBaseUrl.contains("localhost") || backendBaseUrl.contains("127.0.0.1"));
+        if (request != null) {
+            String serverName = request.getServerName();
+            if ("localhost".equalsIgnoreCase(serverName) || "127.0.0.1".equals(serverName)) {
+                isLocalhost = true;
+            }
+        }
+        
+        String domainToSet = (isLocalhost || cookieDomain == null || cookieDomain.isBlank() || "localhost".equals(cookieDomain)) ? null : cookieDomain;
+
         ResponseCookie accessCookie = ResponseCookie.from(ACCESS_COOKIE_NAME, accessToken).httpOnly(true)
-                .secure(secureCookie).sameSite("Lax").path("/").maxAge(86400).domain(cookieDomain).build();
+                .secure(secureCookie).sameSite("Lax").path("/").maxAge(86400).domain(domainToSet).build();
 
         ResponseCookie refreshCookie = ResponseCookie.from(REFRESH_COOKIE_NAME, refreshToken).httpOnly(true)
-                .secure(secureCookie).sameSite("Lax").path("/").domain(cookieDomain).build();
+                .secure(secureCookie).sameSite("Lax").path("/").domain(domainToSet).build();
+
+        logger.info("Setting Cookies: Access={}, Refresh={}", accessCookie.toString(), refreshCookie.toString());
 
         HttpHeaders setCookieHeaders = new HttpHeaders();
         setCookieHeaders.add(HttpHeaders.SET_COOKIE, accessCookie.toString());
@@ -345,15 +357,17 @@ public class AuthController
             // Use HTTPS to decide whether to mark cookies as Secure
             boolean secureCookie = backendBaseUrl != null && backendBaseUrl.startsWith("https://");
 
+            // When on localhost/http, avoid setting an explicit 'domain' as it can break cookie setting in some browsers.
+            boolean isLocalhost = backendBaseUrl != null && (backendBaseUrl.contains("localhost") || backendBaseUrl.contains("127.0.0.1"));
+            String domainToSet = (isLocalhost || cookieDomain == null || cookieDomain.isBlank() || "localhost".equals(cookieDomain)) ? null : cookieDomain;
+
             // Access token cookie is httpOnly and has a max-age matching expiry
-            // Set domain to allow sharing between subdomains
             ResponseCookie accessCookie = ResponseCookie.from(ACCESS_COOKIE_NAME, accessToken).httpOnly(true)
-                    .secure(secureCookie).sameSite("Lax").path("/").maxAge(expiresInSeconds).domain(cookieDomain).build();
+                    .secure(secureCookie).sameSite("Lax").path("/").maxAge(expiresInSeconds).domain(domainToSet).build();
 
             // Refresh token cookie is httpOnly; omit maxAge to allow session-based handling by defaults
-            // Set domain to allow sharing between subdomains
             ResponseCookie refreshCookie = ResponseCookie.from(REFRESH_COOKIE_NAME, refreshToken).httpOnly(true)
-                    .secure(secureCookie).sameSite("Lax").path("/").domain(cookieDomain).build();
+                    .secure(secureCookie).sameSite("Lax").path("/").domain(domainToSet).build();
 
             HttpHeaders setCookieHeaders = new HttpHeaders();
             setCookieHeaders.add(HttpHeaders.SET_COOKIE, accessCookie.toString());
@@ -386,6 +400,8 @@ public class AuthController
     public ResponseEntity<Map<String, Object>> logout(HttpServletResponse response)
     {
         boolean secureCookie = backendBaseUrl != null && backendBaseUrl.startsWith("https://");
+        boolean isLocalhost = backendBaseUrl != null && (backendBaseUrl.contains("localhost") || backendBaseUrl.contains("127.0.0.1"));
+        String domainToSet = (isLocalhost || cookieDomain == null || cookieDomain.isBlank() || "localhost".equals(cookieDomain)) ? null : cookieDomain;
 
         ResponseCookie clearAccess = ResponseCookie.from(ACCESS_COOKIE_NAME, "")
                 .httpOnly(true)
@@ -393,7 +409,7 @@ public class AuthController
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(0)
-                .domain(cookieDomain)
+                .domain(domainToSet)
                 .build();
 
         ResponseCookie clearRefresh = ResponseCookie.from(REFRESH_COOKIE_NAME, "")
@@ -402,7 +418,7 @@ public class AuthController
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(0)
-                .domain(cookieDomain)
+                .domain(domainToSet)
                 .build();
 
         HttpHeaders headers = new HttpHeaders();
@@ -518,6 +534,9 @@ public class AuthController
                     .body(Map.of(ERROR_KEY, "Failed to delete user data", DETAILS_KEY, e.getMessage()));
         }
 
+        boolean isLocalhost = backendBaseUrl != null && (backendBaseUrl.contains("localhost") || backendBaseUrl.contains("127.0.0.1"));
+        String domainToSet = (isLocalhost || cookieDomain == null || cookieDomain.isBlank() || "localhost".equals(cookieDomain)) ? null : cookieDomain;
+        
         // 4. Logout (clear cookies)
         boolean secureCookie = backendBaseUrl != null && backendBaseUrl.startsWith("https://");
         ResponseCookie clearAccess = ResponseCookie.from(ACCESS_COOKIE_NAME, "")
@@ -526,7 +545,7 @@ public class AuthController
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(0) // Expire immediately
-                .domain(cookieDomain)
+                .domain(domainToSet)
                 .build();
 
         ResponseCookie clearRefresh = ResponseCookie.from(REFRESH_COOKIE_NAME, "")
@@ -535,7 +554,7 @@ public class AuthController
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(0) // Expire immediately
-                .domain(cookieDomain)
+                .domain(domainToSet)
                 .build();
 
         return ResponseEntity.ok()
