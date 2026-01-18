@@ -1,6 +1,7 @@
 package app.ospreyplan.backend.config;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.context.annotation.Bean;
@@ -13,15 +14,14 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @Configuration
 public class CorsConfig
 {
-    @Value("${frontend.base-url:http://localhost:3000}")
+    @Value("${frontend.base-url}")
     private String frontendBaseUrl;
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Use a Set to strictly avoid duplicates
-        java.util.Set<String> allowedOrigins = new java.util.LinkedHashSet<>();
+        List<String> allowedOrigins = new ArrayList<>();
         
         // Always allow localhost for development
         allowedOrigins.add("http://localhost:3000");
@@ -31,7 +31,7 @@ public class CorsConfig
             allowedOrigins.addAll(Arrays.asList(generateAllowedOrigins(frontendBaseUrl)));
         }
         
-        configuration.setAllowedOrigins(new java.util.ArrayList<>(allowedOrigins));
+        configuration.setAllowedOrigins(allowedOrigins);
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(Arrays.asList("*")); 
