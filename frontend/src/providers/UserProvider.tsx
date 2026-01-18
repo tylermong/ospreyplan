@@ -43,11 +43,22 @@ export function UserProvider({ children, initialUser }: { children: React.ReactN
         return res.json();
       })
       .then((u) => {
-        const userData = {
-          name: u.user_metadata.full_name,
-          email: u.user_metadata.email,
-          avatar: u.user_metadata.avatar_url,
-        };
+        let userData: User;
+        // Check if it's a Supabase user format (standard) or our simple Demo format
+        if (u.user_metadata) {
+             userData = {
+                name: u.user_metadata.full_name,
+                email: u.user_metadata.email,
+                avatar: u.user_metadata.avatar_url,
+             };
+        } else {
+            // Fallback for Demo User (since our /auth/me for demo just returns basic json {id, email})
+            userData = {
+                name: "Demo User",
+                email: u.email,
+                avatar: "https://ui-avatars.com/api/?name=Demo+User&background=random"
+            };
+        }
         globalUserCache = userData;
         setUser(userData);
       })
