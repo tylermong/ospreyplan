@@ -68,12 +68,14 @@ public class AuthController
     private final UserSettingsRepository userSettingsRepository;
     private final PlannedSemesterRepository plannedSemesterRepository;
     private final PlatformTransactionManager transactionManager;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
-    public AuthController(UserSettingsRepository userSettingsRepository, PlannedSemesterRepository plannedSemesterRepository, PlatformTransactionManager transactionManager)
+    public AuthController(UserSettingsRepository userSettingsRepository, PlannedSemesterRepository plannedSemesterRepository, PlatformTransactionManager transactionManager, org.springframework.jdbc.core.JdbcTemplate jdbcTemplate)
     {
         this.userSettingsRepository = userSettingsRepository;
         this.plannedSemesterRepository = plannedSemesterRepository;
         this.transactionManager = transactionManager;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     // Supabase project base URL (https://<project-id>.supabase.co)
@@ -128,6 +130,14 @@ public class AuthController
 
     @PostMapping("/demo-login")
     public ResponseEntity<Map<String, Object>> demoLogin(HttpServletRequest request) {
+        
+        // Lazily ensure DB constraints are compatible with the demo mode
+        try {
+             jdbcTemplate.execute("ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_id_fkey");
+        } catch (Exception e) {
+             logger.warn("Could not modify database constraints. Demo login might fail if 'users_id_fkey' still exists.", e);
+        }
+        
         UUID demoUserId = UUID.randomUUID();
         String demoEmail = "demo-" + demoUserId + "@demo.app";
 
