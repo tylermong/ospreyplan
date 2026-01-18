@@ -220,7 +220,26 @@ export function AddCourseDialog({ onAddCourse }: Readonly<AddCourseDialogProps>)
           Add course
         </Button>
       </DialogTrigger>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent
+          className="sm:max-w-[600px]"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && selectedCourse && isCreditsValid) {
+              const target = e.target as HTMLElement;
+              // If focusing a button...
+              if (target.tagName === "BUTTON") {
+                // ...only intercept if it's the already-selected course row
+                if (target.getAttribute("aria-pressed") === "true") {
+                   e.preventDefault();
+                   handleAddCourse();
+                }
+                return;
+              }
+              // For inputs (search, credits), always add
+              e.preventDefault();
+              handleAddCourse();
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Add Course</DialogTitle>
           </DialogHeader>
