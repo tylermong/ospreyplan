@@ -135,9 +135,20 @@ export default function Planner({ initialSemesters, initialUserId }: PlannerProp
   const refreshTrigger = semesters.reduce((acc, s) => acc + s.courses.length, 0);
 
   const totalPlannedCredits = useMemo(() => {
-    return semesters.reduce((acc, s) => {
-      return acc + s.courses.reduce((sum, c) => sum + c.credits, 0);
-    }, 0);
+    const maxCreditsByCourse = new Map<string, number>();
+    for (const semester of semesters) {
+      for (const course of semester.courses) {
+        const canonical = extractCanonicalFromPlannerName(course.name);
+        const currentMax = maxCreditsByCourse.get(canonical) || 0;
+        if (course.credits > currentMax) {
+          maxCreditsByCourse.set(canonical, course.credits);
+        }
+      }
+    }
+    
+    let total = 0;
+    maxCreditsByCourse.forEach((credits) => (total += credits));
+    return total;
   }, [semesters]);
 
   if (loading) {
