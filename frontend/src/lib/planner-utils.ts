@@ -38,7 +38,11 @@ export function recomputePrereqStatuses(current: Semester[]): Semester[] {
     courses: sem.courses.map((c) => {
       const matrix = parsePrerequisite(c.prerequisite ?? null);
       const priorSet = takenBeforePerSemester.get(sem.id) ?? new Set<string>();
-      const unmet = listUnmetGroups(matrix, priorSet);
+      // Allow prerequisites to be satisfied by concurrent courses in the same semester
+      const semSet = new Set(sem.courses.map((sc) => extractCanonicalFromPlannerName(sc.name)));
+      const priorPlusCurrent = new Set(priorSet);
+      for (const s of semSet) priorPlusCurrent.add(s);
+      const unmet = listUnmetGroups(matrix, priorPlusCurrent);
       return {
         ...c,
         unmetPrereqs:
