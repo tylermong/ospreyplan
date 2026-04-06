@@ -28,7 +28,8 @@ VALUES
   ('hs-gen-conc-core-1260', 'COURSE', 'BIOL', 1260),
   ('hs-gen-conc-core-2260', 'COURSE', 'BIOL', 2260),
   ('hs-gen-conc-core-2501', 'COURSE', 'HLTH', 2501),
-  ('hs-gen-conc-core-3411', 'COURSE', 'HLTH', 3411);
+  ('hs-gen-conc-core-3411', 'COURSE', 'HLTH', 3411),
+  ('hs-gen-conc-core-4200', 'COURSE', 'HLTH', 4200);
 
 --------------------------------------------------------------------------------
 -- 2. Upper Level Cognates: Health Science, General Concentration (Need 5) - Priority: 20
