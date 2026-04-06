@@ -213,6 +213,7 @@ export default function Settings({ initialSettings }: { initialSettings?: { degr
                             <SelectLabel>Degrees</SelectLabel>
                             <SelectItem value="bs-computer-science" className="cursor-pointer">B.S. Computer Science</SelectItem>
                             <SelectItem value="bs-computer-information-systems" className="cursor-pointer">B.S. Computer Information Systems</SelectItem>
+                          <SelectItem value="bs-health-science-gen-conc" className="cursor-pointer">B.S. Health Science (General Concentration)</SelectItem>
                         </SelectGroup>
                     </SelectContent>
                 </Select>

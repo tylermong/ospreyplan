@@ -77,6 +77,7 @@ export function DegreeAudit({ userId, refreshTrigger, totalCredits }: DegreeAudi
   const degreeName = data.degreeCode 
     ? (data.degreeCode === 'bs-computer-science' ? 'B.S. in Computer Science' : 
        data.degreeCode === 'bs-computer-information-systems' ? 'B.S. in Computer Information Systems' : 
+       data.degreeCode === 'bs-health-science-gen-conc' ? 'B.S. in Health Science (General Concentration)' : 
        data.degreeCode)
     : 'No Degree Selected';
 
