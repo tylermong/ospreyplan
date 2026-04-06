@@ -105,6 +105,11 @@ VALUES
   ('hs-gen-conc-lower-cognates', 'COURSE', 'EDUC', 1515),
   ('hs-gen-conc-lower-cognates', 'COURSE', 'EDUC', 2241);
 
+INSERT INTO public.requirement_criteria (requirement_id, type, subject, course_number)
+VALUES
+  ('hs-gen-conc-lower-cognates', 'EXCLUDE_COURSE', 'CHEM', 2110),
+  ('hs-gen-conc-lower-cognates', 'EXCLUDE_COURSE', 'CHEM', 2115);
+
 --------------------------------------------------------------------------------
 -- 4. General Studies (48 credits) - Priority: 30
 --------------------------------------------------------------------------------

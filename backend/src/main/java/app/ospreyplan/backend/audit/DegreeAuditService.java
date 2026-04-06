@@ -303,6 +303,9 @@ public class DegreeAuditService {
     }
 
     private String generateMissingCriteriaDescription(RequirementCriteria criteria) {
+        if ("EXCLUDE_COURSE".equals(criteria.getType())) {
+            return "";
+        }
         if ("COURSE".equals(criteria.getType())) {
             return criteria.getSubject() + " " + criteria.getCourseNumber();
         } else if ("RANGE".equals(criteria.getType())) {
@@ -322,8 +325,16 @@ public class DegreeAuditService {
     }
 
     private boolean matches(Course course, List<RequirementCriteria> criteriaList) {
+        // Exclusions take precedence over positive match criteria.
+        for (RequirementCriteria criteria : criteriaList) {
+            if (criteria.getGroupId() != null) continue;
+            if (!"EXCLUDE_COURSE".equals(criteria.getType())) continue;
+            if (matchesCriteria(course, criteria)) return false;
+        }
+
         for (RequirementCriteria criteria : criteriaList) {
             if (criteria.getGroupId() != null) continue; // Skip grouped criteria
+            if ("EXCLUDE_COURSE".equals(criteria.getType())) continue;
             if (matchesCriteria(course, criteria)) return true;
         }
         return false;
@@ -332,6 +343,10 @@ public class DegreeAuditService {
     private boolean matchesCriteria(Course course, RequirementCriteria criteria) {
         if ("COURSE".equals(criteria.getType())) {
             // Specific Course Match (Subject + Number)
+            if (criteria.getSubject() != null && !criteria.getSubject().equals(course.getCourseId().getSubject())) return false;
+            if (criteria.getCourseNumber() != null && !criteria.getCourseNumber().equals(course.getCourseId().getCourseNumber().intValue())) return false;
+            return true;
+        } else if ("EXCLUDE_COURSE".equals(criteria.getType())) {
             if (criteria.getSubject() != null && !criteria.getSubject().equals(course.getCourseId().getSubject())) return false;
             if (criteria.getCourseNumber() != null && !criteria.getCourseNumber().equals(course.getCourseId().getCourseNumber().intValue())) return false;
             return true;
