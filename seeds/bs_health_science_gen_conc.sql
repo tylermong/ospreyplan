@@ -108,7 +108,8 @@ VALUES
 INSERT INTO public.requirement_criteria (requirement_id, type, subject, course_number)
 VALUES
   ('hs-gen-conc-lower-cognates', 'EXCLUDE_COURSE', 'CHEM', 2110),
-  ('hs-gen-conc-lower-cognates', 'EXCLUDE_COURSE', 'CHEM', 2115);
+  ('hs-gen-conc-lower-cognates', 'EXCLUDE_COURSE', 'CHEM', 2115),
+  ('hs-gen-conc-lower-cognates', 'EXCLUDE_COURSE', 'PSYC', 3);
 
 --------------------------------------------------------------------------------
 -- 4. General Studies (48 credits) - Priority: 30
@@ -201,3 +202,6 @@ VALUES ('hs-gen-conc-asd-bucket', 'bs-health-science-gen-conc', 'At Some Distanc
 
 INSERT INTO public.requirement_criteria (requirement_id, type)
 VALUES ('hs-gen-conc-asd-bucket', 'CATCH_ALL');
+
+INSERT INTO public.requirement_criteria (requirement_id, type, subject, course_number)
+VALUES ('hs-gen-conc-asd-bucket', 'EXCLUDE_COURSE', 'PSYC', 3);

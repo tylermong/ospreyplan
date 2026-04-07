@@ -236,15 +236,18 @@ public class DegreeAuditService {
 
         // Pass 3: Catch-all (ASD)
         DegreeRequirement catchAllReq = requirements.stream()
-                .filter(r -> "CATCH_ALL".equals(r.getCategory()) || "ASD".equals(r.getCategory()))
-                .findFirst().orElse(null);
+            .filter(r -> "CATCH_ALL".equals(r.getCategory())
+                || "ASD".equals(r.getCategory())
+                || "At Some Distance Requirements".equals(r.getCategory())
+                || r.getCriteria().stream().anyMatch(c -> "CATCH_ALL".equals(c.getType())))
+            .findFirst().orElse(null);
 
         if (catchAllReq != null) {
             DegreeAuditResult result = results.get(reqIdToIndex.get(catchAllReq.getId()));
             for (PlannedCourse pc : plannedCourses) {
                 if (!consumedPlannedCourseIds.contains(pc.getId())) {
                     Course course = courseDetailsMap.get(pc.getId());
-                    if (course != null) {
+                    if (course != null && matches(course, catchAllReq.getCriteria())) {
                          result.getSatisfiedBy().add(toDTO(pc, course));
                     }
                 }
