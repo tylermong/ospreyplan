@@ -103,7 +103,8 @@ VALUES
   ('hs-gen-conc-lower-cognates', 'COURSE', 'LANG', 2144),
   ('hs-gen-conc-lower-cognates', 'COURSE', 'LANG', 2145),
   ('hs-gen-conc-lower-cognates', 'COURSE', 'EDUC', 1515),
-  ('hs-gen-conc-lower-cognates', 'COURSE', 'EDUC', 2241);
+  ('hs-gen-conc-lower-cognates', 'COURSE', 'EDUC', 2241),
+  ('hs-gen-conc-lower-cognates', 'COURSE', 'ANTH', 1100);
 
 INSERT INTO public.requirement_criteria (requirement_id, type, subject, course_number)
 VALUES
